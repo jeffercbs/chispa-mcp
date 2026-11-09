@@ -32,7 +32,7 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
+			"preset": "recommended",
 			"style": { "useImportType": "error", "noNonNullAssertion": "off" },
 			"suspicious": { "noExplicitAny": "error" },
 			"correctness": { "noUnusedImports": "error", "noUnusedVariables": "warn" }

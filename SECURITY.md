@@ -39,4 +39,4 @@ El paquete y su código son públicos, pero **no da acceso a nada por sí solo**
 
 ## Reportar una vulnerabilidad
 
-Usa **«Report a vulnerability»** en la pestaña *Security* de este repositorio (reporte privado de GitHub). No abras un issue público con detalles explotables. Responderemos con un plazo y, si procede, publicaremos una versión corregida y un aviso.
+Usa **«Report a vulnerability»** en la pestaña _Security_ de este repositorio (reporte privado de GitHub). No abras un issue público con detalles explotables. Responderemos con un plazo y, si procede, publicaremos una versión corregida y un aviso.
