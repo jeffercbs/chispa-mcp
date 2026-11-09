@@ -1,0 +1,57 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
+	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+	"files": {
+		"ignoreUnknown": true,
+		"includes": [
+			"**",
+			"!**/node_modules",
+			"!**/.svelte-kit",
+			"!**/dist",
+			"!**/build",
+			"!**/.wrangler",
+			"!**/worker-configuration.d.ts",
+			"!**/pnpm-lock.yaml"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineWidth": 140
+	},
+	"javascript": {
+		"formatter": { "quoteStyle": "double", "trailingCommas": "none", "semicolons": "always", "arrowParentheses": "always" }
+	},
+	"json": { "formatter": { "trailingCommas": "none" } },
+	"css": { "parser": { "tailwindDirectives": true }, "formatter": { "enabled": true } },
+	"html": {
+		"experimentalFullSupportEnabled": true,
+		"formatter": { "enabled": true, "indentScriptAndStyle": true }
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"style": { "useImportType": "error", "noNonNullAssertion": "off" },
+			"suspicious": { "noExplicitAny": "error" },
+			"correctness": { "noUnusedImports": "error", "noUnusedVariables": "warn" }
+		}
+	},
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"overrides": [
+		{
+			"includes": ["**/*.svelte"],
+			"linter": {
+				"rules": {
+					"style": { "useConst": "off", "useImportType": "off" },
+					"correctness": { "noUnusedImports": "off", "noUnusedVariables": "off" }
+				}
+			}
+		},
+		{
+			"includes": ["**/components/ui/**"],
+			"linter": { "enabled": false }
+		}
+	]
+}

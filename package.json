@@ -1,0 +1,51 @@
+{
+	"name": "@jeffercbs/chispa-mcp",
+	"version": "0.2.0",
+	"description": "Servidor MCP de Chispa: conecta asistentes de IA a las aulas con los permisos de cada docente. Inicia sesión con tu cuenta del proyecto.",
+	"license": "MIT",
+	"type": "module",
+	"private": false,
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jeffercbs/chispa-mcp.git"
+	},
+	"publishConfig": {
+		"registry": "https://npm.pkg.github.com",
+		"access": "public"
+	},
+	"bin": {
+		"chispa-mcp": "./dist/cli.js"
+	},
+	"main": "./dist/cli.js",
+	"files": [
+		"dist",
+		"README.md",
+		"SECURITY.md",
+		"ARCHITECTURE.md"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json && chmod +x dist/cli.js",
+		"prepare": "pnpm build",
+		"start": "node dist/cli.js",
+		"login": "node dist/cli.js login",
+		"test": "vitest --run",
+		"check": "tsc --noEmit",
+		"biome": "biome check --write",
+		"biome:ci": "biome ci"
+	},
+	"dependencies": {
+		"@supabase/supabase-js": "^2.119.0",
+		"zod": "^4.6.7"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.6.6",
+		"@types/node": "^26.6.6",
+		"typescript": "^7.0.2",
+		"vite": "^8.3.7",
+		"vitest": "^5.1.0"
+	},
+	"packageManager": "pnpm@12.18.0",
+	"engines": {
+		"node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+	}
+}
