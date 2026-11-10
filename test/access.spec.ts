@@ -13,3 +13,15 @@ describe("permisos por rol", () => {
 		expect(allows("none", null)).toBe(true);
 	});
 });
+
+describe("permisos delegables a profesores", () => {
+	it("el administrador tiene todos y el profesor solo los que se le dieron", async () => {
+		const { allows, resolvePermissions } = await import("../src/domain/access.js");
+		expect(allows("accesos", "administrador")).toBe(true);
+		expect(allows("accesos", "profesor")).toBe(false);
+		expect(allows("accesos", "profesor", resolvePermissions("profesor", { accesos: true }))).toBe(true);
+		expect(allows("soporte", "profesor")).toBe(true);
+		expect(allows("soporte", "profesor", resolvePermissions("profesor", { soporte: false }))).toBe(false);
+		expect(allows("comercio", null)).toBe(false);
+	});
+});

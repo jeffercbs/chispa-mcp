@@ -82,7 +82,7 @@ export const setGroupPricing = defineTool({
 		.refine((input) => (input.mode === "personalizado") === (input.discounts !== undefined), {
 			error: "Envía discounts solo con el modo «personalizado» (y es obligatorio en ese modo)."
 		})
-		.refine((input) => !input.discounts || input.discounts.every((value, index, all) => index === 0 || value >= all[index - 1]), {
+		.refine((input) => !input.discounts || input.discounts.every((value, index, all) => index === 0 || value >= (all[index - 1] ?? 0)), {
 			error: "Los descuentos no pueden bajar al sumar personas."
 		}),
 	async run({ db, actor }, input) {

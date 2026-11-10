@@ -158,7 +158,7 @@ export const removeMember = defineTool({
 	name: "remove_member",
 	title: "Quitar a alguien del aula",
 	description: "Quita la plaza de una persona del aula. Pierde el acceso. Pide confirmación explícita a la persona.",
-	level: "team",
+	level: "alumnos",
 	readOnly: false,
 	destructive: true,
 	input: z.object({ classroom_id: id("Aula"), member_id: id("Plaza"), confirm }),
@@ -176,7 +176,7 @@ export const setCourseGrants = defineTool({
 	title: "Fijar los cursos activados de una persona",
 	description:
 		"Fija exactamente a qué cursos del aula tiene acceso completo una persona con plaza (los que no incluyas se le quitan). Primero consulta list_members para no quitar accesos por error; confirma con la persona.",
-	level: "manager",
+	level: "activacion",
 	readOnly: false,
 	input: z.object({
 		classroom_id: id("Aula"),

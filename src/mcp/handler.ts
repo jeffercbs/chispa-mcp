@@ -23,12 +23,13 @@ export type HandlerContext = {
 };
 
 const LEVEL_LABEL = { none: "Cuenta docente", team: "Equipo del aula", manager: "Administrador del aula" } as const;
+const levelLabel = (level: Tool["level"]) => (level in LEVEL_LABEL ? LEVEL_LABEL[level as keyof typeof LEVEL_LABEL] : "Equipo del aula · requiere permiso");
 
 export function describeTools(tools: readonly Tool[]) {
 	return tools.map((tool) => ({
 		name: tool.name,
 		title: tool.title,
-		description: `[${LEVEL_LABEL[tool.level]}${tool.destructive ? " · irreversible" : tool.readOnly ? " · solo lectura" : ""}] ${tool.description}`,
+		description: `[${levelLabel(tool.level)}${tool.destructive ? " · irreversible" : tool.readOnly ? " · solo lectura" : ""}] ${tool.description}`,
 		inputSchema: z.toJSONSchema(tool.input, { io: "input", unrepresentable: "any" }),
 		annotations: { title: tool.title, readOnlyHint: tool.readOnly, destructiveHint: Boolean(tool.destructive), openWorldHint: false }
 	}));

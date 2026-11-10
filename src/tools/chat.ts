@@ -12,7 +12,7 @@ export const listWaitingChats = defineTool({
 	name: "list_waiting_chats",
 	title: "Chats sin responder",
 	description: "Lista las conversaciones del aula cuyo último mensaje es del estudiante, con ese mensaje.",
-	level: "team",
+	level: "soporte",
 	readOnly: true,
 	input: z.object({ classroom_id: id("Aula") }),
 	async run({ db }, input) {
@@ -68,7 +68,7 @@ export const replyChat = defineTool({
 	name: "reply_chat",
 	title: "Responder un chat",
 	description: "Envía una respuesta en una conversación del aula. Muestra el texto a la persona y pide su confirmación antes de enviarlo.",
-	level: "team",
+	level: "soporte",
 	readOnly: false,
 	input: z.object({ classroom_id: id("Aula"), thread_id: id("Conversación"), body: text(4000, "Mensaje") }),
 	async run({ db, actor }, input) {
@@ -104,7 +104,7 @@ export const getChatThread = defineTool({
 	name: "get_chat_thread",
 	title: "Leer una conversación",
 	description: "Devuelve los mensajes de una conversación del aula, en orden.",
-	level: "team",
+	level: "soporte",
 	readOnly: true,
 	input: z.object({ classroom_id: id("Aula"), thread_id: id("Conversación") }),
 	async run({ db }, input) {
@@ -135,7 +135,7 @@ export const setChatStatus = defineTool({
 	name: "set_chat_status",
 	title: "Marcar una conversación",
 	description: "Marca una conversación del aula como resuelta o la reabre.",
-	level: "team",
+	level: "soporte",
 	readOnly: false,
 	input: z.object({ classroom_id: id("Aula"), thread_id: id("Conversación"), status: z.enum(["abierto", "resuelto"]) }),
 	async run({ db }, input) {
@@ -155,7 +155,7 @@ export const deleteChat = defineTool({
 	name: "delete_chat",
 	title: "Eliminar una conversación",
 	description: "Elimina una conversación del aula con todos sus mensajes. Irreversible: pide confirmación explícita a la persona.",
-	level: "team",
+	level: "soporte",
 	readOnly: false,
 	destructive: true,
 	input: z.object({

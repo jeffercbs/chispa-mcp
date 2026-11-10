@@ -10,7 +10,7 @@ export const listAccessRequests = defineTool({
 	name: "list_access_requests",
 	title: "Solicitudes y cursos por activar",
 	description: "Lista quién pide entrar al aula y quién está en prueba esperando que le actives el curso que eligió.",
-	level: "manager",
+	level: "accesos",
 	readOnly: true,
 	input: z.object({ classroom_id: id("Aula") }),
 	async run({ db }, input) {
@@ -47,7 +47,7 @@ export const decideAccessRequest = defineTool({
 	name: "decide_access_request",
 	title: "Aprobar o rechazar una solicitud",
 	description: "Aprueba o rechaza una solicitud para entrar al aula. Confirma con la persona antes de hacerlo.",
-	level: "team",
+	level: "accesos",
 	readOnly: false,
 	input: z.object({
 		classroom_id: id("Aula"),
@@ -72,7 +72,7 @@ export const activateTrialCourse = defineTool({
 	name: "activate_trial_course",
 	title: "Activar el curso elegido",
 	description: "Da acceso completo al curso que eligió una persona que está en prueba. Confirma con la persona antes de hacerlo.",
-	level: "manager",
+	level: "activacion",
 	readOnly: false,
 	input: z.object({ classroom_id: id("Aula"), user_id: id("Estudiante") }),
 	async run({ db, actor }, input) {

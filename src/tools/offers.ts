@@ -27,7 +27,7 @@ export const listOffers = defineTool({
 	name: "list_offers",
 	title: "Ofertas del aula",
 	description: "Lista las ofertas del aula con su tipo, descuento, vigencia, cupos y estado.",
-	level: "manager",
+	level: "comercio",
 	readOnly: true,
 	input: z.object({ classroom_id: id("Aula") }),
 	async run({ db }, input) {
@@ -127,7 +127,7 @@ export const createOffer = defineTool({
 	title: "Crear oferta",
 	description:
 		"Crea una oferta para cursos del aula: porcentaje, monto de descuento, precio fijo, descuento en el segundo curso o paquete. Queda pausada salvo que pidas activarla; confirma con la persona antes de activarla.",
-	level: "manager",
+	level: "comercio",
 	readOnly: false,
 	input: withOfferRules(z.object({ classroom_id: id("Aula"), ...offerShape, activate: z.boolean().default(false) })),
 	async run({ db, actor }, input) {
@@ -156,7 +156,7 @@ export const updateOffer = defineTool({
 	title: "Editar oferta",
 	description:
 		"Reemplaza los datos de una oferta del aula (nombre, tipo, valor, cursos, vigencia y cupos). Envía todos los campos, no solo lo que cambia; consulta list_offers primero. El estado activo/pausado no cambia: usa set_offer_active.",
-	level: "manager",
+	level: "comercio",
 	readOnly: false,
 	input: withOfferRules(z.object({ classroom_id: id("Aula"), offer_id: id("Oferta"), ...offerShape })),
 	async run({ db }, input) {
@@ -184,7 +184,7 @@ export const deleteOffer = defineTool({
 	name: "delete_offer",
 	title: "Borrar oferta",
 	description: "Borra una oferta del aula. Irreversible: pide confirmación explícita a la persona.",
-	level: "manager",
+	level: "comercio",
 	readOnly: false,
 	destructive: true,
 	input: z.object({
@@ -210,7 +210,7 @@ export const setOfferActive = defineTool({
 	name: "set_offer_active",
 	title: "Activar o pausar una oferta",
 	description: "Activa o pausa una oferta del aula. Confirma con la persona antes de activarla.",
-	level: "manager",
+	level: "comercio",
 	readOnly: false,
 	input: z.object({ classroom_id: id("Aula"), offer_id: id("Oferta"), active: z.boolean() }),
 	async run({ db }, input) {

@@ -14,7 +14,7 @@ export const salesSummary = defineTool({
 	name: "sales_summary",
 	title: "Resumen de ventas",
 	description: "Totales de ventas pagadas del aula en un periodo y lo vendido por curso. No incluye datos de contacto de los compradores.",
-	level: "manager",
+	level: "comercio",
 	readOnly: true,
 	input: z.object({ classroom_id: id("Aula"), days: z.number().int().min(1).max(365).default(30).describe("Días hacia atrás") }),
 	async run({ db, currency }, input) {
@@ -61,7 +61,7 @@ export const listSales = defineTool({
 	title: "Registro de ventas",
 	description:
 		"Lista las compras del aula (pagadas, pendientes y fallidas) con referencia, montos, comisión y cursos. No incluye datos de contacto de los compradores.",
-	level: "manager",
+	level: "comercio",
 	readOnly: true,
 	input: z.object({
 		classroom_id: id("Aula"),
@@ -95,7 +95,7 @@ export const salesFunnel = defineTool({
 	title: "Embudo de ventas",
 	description:
 		"Cuántos carritos se abrieron, cuántos pagos se iniciaron y cuántos se pagaron, más lo abandonado por curso. Sin datos de contacto.",
-	level: "manager",
+	level: "comercio",
 	readOnly: true,
 	input: z.object({ classroom_id: id("Aula") }),
 	async run({ db }, input) {
@@ -138,7 +138,7 @@ export const groupSales = defineTool({
 	title: "Ventas para varias personas",
 	description:
 		"Compras pagadas de un curso para varias personas en el aula: cuántas cuentas adicionales se vendieron, cuántas ya tienen correo asignado e invitación enviada, y cuánto se cobró por ellas. Sin correos ni datos de contacto.",
-	level: "manager",
+	level: "comercio",
 	readOnly: true,
 	input: z.object({
 		classroom_id: id("Aula"),
