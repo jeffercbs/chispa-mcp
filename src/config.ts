@@ -18,8 +18,8 @@ export type Config = {
 };
 
 // La URL y la clave publicable de Supabase son públicas por diseño: la seguridad real es RLS.
-const DEFAULT_URL = "https://diykhmnhpyututossrlv.supabase.co";
-const DEFAULT_KEY = "sb_publishable_XltYHxHtG6oBttbaufI-bw_j0yu8SHf";
+const DEFAULT_URL = "https://gcvychpnivksfflbqifi.supabase.co";
+const DEFAULT_KEY = "sb_publishable_kn9lXuBWyWi0-PF2n82FgA_LIT1ohmp";
 const DEFAULT_PORT = 53682;
 
 function bounded(env: NodeJS.ProcessEnv, name: string, fallback: number, min: number, max: number) {

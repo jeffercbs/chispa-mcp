@@ -72,7 +72,7 @@ y ejecuta `npx -y @jeffercbs/chispa-mcp login`.
 
 1. `chispa-mcp login` abre el navegador en la pantalla de consentimiento de Guías Clave (OAuth 2.1 con PKCE de Supabase, redirección a `127.0.0.1`).
 2. Entras con tu cuenta de docente y apruebas el acceso.
-3. Los tokens quedan en `~/.config/chispa-mcp/credentials.json` (permisos 0600) y se renuevan solos.
+3. Los tokens quedan en `~/.config/chispa-mcp/credentials.json` cifrados (AES-256-GCM, permisos 0600) y se renuevan solos.
 4. `chispa-mcp whoami` muestra la cuenta; `chispa-mcp logout` borra la sesión local.
 
 No hay contraseñas ni claves de servicio en el paquete: el asistente actúa con el token de la persona y RLS decide qué ve.
@@ -95,7 +95,7 @@ Si no has iniciado sesión, las herramientas responden con la instrucción de ej
 
 | Variable                       | Para qué                                                               |
 | ------------------------------ | ---------------------------------------------------------------------- |
-| `CHISPA_SUPABASE_URL`          | Otro proyecto Supabase (por defecto "taller ai")                       |
+| `CHISPA_SUPABASE_URL`          | Otro proyecto Supabase (por defecto "chispi")                       |
 | `CHISPA_SUPABASE_ANON_KEY`     | Clave publicable de ese proyecto                                       |
 | `CHISPA_MCP_PORT`              | Puerto del callback de login (53682)                                   |
 | `CHISPA_MCP_HOME`              | Carpeta de credenciales                                                |

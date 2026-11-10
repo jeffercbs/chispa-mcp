@@ -1,4 +1,4 @@
-import { mkdtemp, stat } from "node:fs/promises";
+import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -25,5 +25,27 @@ describe("store", () => {
 		const after = await readCredentials(dir, URL_A);
 		expect(after.tokens).toBeUndefined();
 		expect(after.client?.id).toBe("c");
+	});
+	it("cifra el archivo: ni tokens ni URL aparecen en texto plano", async () => {
+		const dir = await mkdtemp(join(tmpdir(), "chispa-mcp-"));
+		await writeCredentials(dir, { supabaseUrl: URL_A, tokens: { accessToken: "secreto-acceso", refreshToken: "secreto-refresco", expiresAt: 1 } });
+		const raw = await readFile(join(dir, "credentials.json"), "utf8");
+		expect(raw).not.toContain("secreto");
+		expect(raw).not.toContain("supabase.co");
+		expect((await stat(join(dir, "vault.key"))).mode & 0o777).toBe(0o600);
+	});
+	it("un archivo manipulado se trata como sin sesión", async () => {
+		const dir = await mkdtemp(join(tmpdir(), "chispa-mcp-"));
+		await writeCredentials(dir, { supabaseUrl: URL_A, tokens: { accessToken: "a", refreshToken: "r", expiresAt: 1 } });
+		const envelope = JSON.parse(await readFile(join(dir, "credentials.json"), "utf8")) as { data: string };
+		envelope.data = Buffer.from("manipulado").toString("base64");
+		await writeFile(join(dir, "credentials.json"), JSON.stringify(envelope));
+		expect((await readCredentials(dir, URL_A)).tokens).toBeUndefined();
+	});
+	it("migra un archivo antiguo en texto plano a cifrado", async () => {
+		const dir = await mkdtemp(join(tmpdir(), "chispa-mcp-"));
+		await writeFile(join(dir, "credentials.json"), JSON.stringify({ supabaseUrl: URL_A, tokens: { accessToken: "plano", refreshToken: "r", expiresAt: 1 } }));
+		expect((await readCredentials(dir, URL_A)).tokens?.accessToken).toBe("plano");
+		expect(await readFile(join(dir, "credentials.json"), "utf8")).not.toContain("plano");
 	});
 });

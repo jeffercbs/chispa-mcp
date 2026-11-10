@@ -3,7 +3,7 @@
 ## Principios
 
 1. **El asistente nunca tiene más permisos que la persona.** Todas las consultas van a Supabase con el token del usuario y la clave anónima; **no existe clave service-role**. RLS es la frontera real; el servidor añade comprobaciones de rol por encima, nunca en lugar de RLS.
-2. **Credenciales solo en el equipo de la persona.** Los tokens se guardan en `~/.config/chispa-mcp/credentials.json` con permisos 0600 (carpeta 0700). Nada se envía a terceros: solo al proyecto Supabase.
+2. **Credenciales solo en el equipo de la persona.** Los tokens se guardan **cifrados** (AES-256-GCM) en `~/.config/chispa-mcp/credentials.json` con permisos 0600 (carpeta 0700). La clave se deriva de `vault.key` (aleatoria, 0600) y del identificador de la máquina, por lo que el archivo copiado a otro equipo no se puede leer. Un archivo ilegible o manipulado se ignora y se pide iniciar sesión de nuevo; `chispa-mcp logout` borra ambos archivos. Nada se envía a terceros: solo al proyecto Supabase.
 3. **Mínimo de datos.** Las herramientas devuelven nombres y cifras; nunca correos, teléfonos ni datos de pago.
 4. **Errores sin detalle técnico.** Al cliente le llegan mensajes en español; los detalles internos no salen del servidor.
 
