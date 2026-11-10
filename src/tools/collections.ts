@@ -6,7 +6,7 @@ import { defineTool } from "../mcp/tool.js";
 
 const confirm = z.literal(true).describe("Debe ser true: la persona confirmó esta acción irreversible");
 
-async function ownCollection(db: Db, userId: string, collectionId: string) {
+export async function ownCollection(db: Db, userId: string, collectionId: string) {
 	const { data } = await db.from("course_collections").select("id, owner_id").eq("id", collectionId).maybeSingle();
 	const row = data as { owner_id: string } | null;
 	if (!row) throw new ToolError(NOT_FOUND);

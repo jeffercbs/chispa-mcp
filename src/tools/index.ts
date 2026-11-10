@@ -1,4 +1,5 @@
 import type { Tool } from "../mcp/tool.js";
+import { setCollectionBanner, setCourseBanner } from "./banners.js";
 import { importExam, importModuleContent } from "./bulk-import.js";
 import { deleteChat, getChatThread, listWaitingChats, replyChat, setChatStatus } from "./chat.js";
 import { listMyClassrooms } from "./classrooms.js";
@@ -91,6 +92,8 @@ export const TOOLS = [
 	deleteCollection,
 	moveCourseToCollection,
 	reorderCollectionCourses,
+	setCourseBanner,
+	setCollectionBanner,
 	getModule,
 	updateModule,
 	deleteModule,

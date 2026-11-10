@@ -24,7 +24,13 @@ export const LIMITS = {
 	/** Espera máxima de una petición de red (ms). */
 	networkMs: 15_000,
 	/** Cuántos errores de validación se muestran juntos. */
-	issuesShown: 8
+	issuesShown: 8,
+	/** Imágenes (portadas): peso máximo de la original, píxeles máximos y peso objetivo del WebP final. */
+	imageInputBytes: 15 * 1024 * 1024,
+	imagePixels: 50_000_000,
+	imageTargetBytes: 300 * 1024,
+	/** Redirecciones permitidas al descargar una imagen por URL. */
+	imageRedirects: 3
 } as const;
 
 /** Roles del sistema y del aula. */

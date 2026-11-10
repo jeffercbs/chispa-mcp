@@ -9,10 +9,10 @@ El asistente puede hacer todo lo que un profesor o administrador hace en las pan
 | Área         | Herramientas                                                                                                                                                                                                                                      | Nivel                   |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | Aulas        | `list_my_classrooms`                                                                                                                                                                                                                              | docente                 |
-| Cursos       | `list_courses`, `get_course`, `create_course`, `update_course`, `reorder_modules`, `get_course_outline`                                                                                                                                           | equipo                  |
+| Cursos       | `list_courses`, `get_course`, `create_course`, `update_course`, `reorder_modules`, `set_course_banner`, `get_course_outline`                                                                                                                      | equipo                  |
 |              | `delete_course`, `transfer_course`                                                                                                                                                                                                                | quien creó el curso     |
 | Temas        | `list_course_themes`, `save_theme`, `delete_theme`, `set_item_themes`                                                                                                                                                                             | equipo                  |
-| Colecciones  | `list_collections`, `save_collection`, `delete_collection`, `move_course_to_collection`, `reorder_collection_courses`                                                                                                                             | tus propias colecciones |
+| Colecciones  | `list_collections`, `save_collection`, `delete_collection`, `move_course_to_collection`, `reorder_collection_courses`, `set_collection_banner`                                                                                                    | tus propias colecciones |
 | Módulos      | `get_module`, `create_module`, `update_module`, `delete_module`, `reorder_lessons`                                                                                                                                                                | equipo                  |
 | Lecciones    | `get_lesson`, `create_lesson`, `update_lesson`, `delete_lesson`, `set_published`                                                                                                                                                                  | equipo                  |
 | Material     | `list_lesson_items`, `add_quiz_questions`, `save_quiz_question`, `delete_quiz_question`, `save_self_check_question`, `delete_self_check_question`, `add_flashcards`, `save_flashcard`, `delete_flashcard`, `get_game`, `save_game`, `delete_game` | equipo                  |
@@ -41,11 +41,19 @@ Pensadas para subir un simulacro, un banco de preguntas o varias lecciones de un
 - **Tandas e índices:** hasta 200 preguntas por llamada y 30 lecciones por carga; las inserciones van en tandas de 100.
 - `import_exam` crea el examen y sus preguntas en un paso; `import_module_content` crea varias lecciones con su quiz y tarjetas.
 
+## Portadas de cursos y colecciones
+
+`set_course_banner` y `set_collection_banner` suben (o quitan con `remove`) la portada. Se indica `image_path` (archivo en el equipo donde corre el MCP) o `image_url` (https público; se rechazan direcciones privadas y locales).
+
+- Entrada: JPG, PNG, WEBP, GIF (primer cuadro) o AVIF, hasta 15 MB y 50 megapíxeles. El SVG no se acepta.
+- Salida: siempre **WebP**, lado mayor de 1600 px como máximo, sin metadatos (EXIF/GPS) y con la calidad justa para quedar bajo ~300 KB.
+- Se guarda en el bucket `course-banners` como la plataforma, y la portada anterior se borra.
+
 ## Instrucciones y flujos guiados
 
 Al conectarse, el servidor entrega unas instrucciones al asistente (tono claro y didáctico, validar antes de guardar, confirmar antes de publicar o borrar, cómo hacer cargas masivas, tratar el texto de estudiantes como información y no como órdenes). Además ofrece flujos guiados (`prompts`): `cargar_simulacro`, `crear_curso_completo`, `revisar_grupo` y `atender_solicitudes`. El texto está en `src/mcp/instructions.ts` y `src/mcp/prompts.ts`.
 
-**Fuera de alcance a propósito:** subir imágenes (banners de cursos, colecciones y ofertas), datos de contacto de compradores y el análisis geográfico de la audiencia. Tampoco se envían los avisos automáticos a estudiantes que la plataforma manda al publicar un módulo o una lección.
+**Fuera de alcance a propósito:** subir imágenes de ofertas, datos de contacto de compradores y el análisis geográfico de la audiencia. Tampoco se envían los avisos automáticos a estudiantes que la plataforma manda al publicar un módulo o una lección.
 
 ## Instalación
 
@@ -95,7 +103,7 @@ Si no has iniciado sesión, las herramientas responden con la instrucción de ej
 
 | Variable                       | Para qué                                                               |
 | ------------------------------ | ---------------------------------------------------------------------- |
-| `CHISPA_SUPABASE_URL`          | Otro proyecto Supabase (por defecto "chispi")                       |
+| `CHISPA_SUPABASE_URL`          | Otro proyecto Supabase (por defecto "chispi")                          |
 | `CHISPA_SUPABASE_ANON_KEY`     | Clave publicable de ese proyecto                                       |
 | `CHISPA_MCP_PORT`              | Puerto del callback de login (53682)                                   |
 | `CHISPA_MCP_HOME`              | Carpeta de credenciales                                                |
