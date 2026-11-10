@@ -4,7 +4,7 @@ import { importExam, importModuleContent } from "./bulk-import.js";
 import { deleteChat, getChatThread, listWaitingChats, replyChat, setChatStatus } from "./chat.js";
 import { listMyClassrooms } from "./classrooms.js";
 import { deleteCollection, listCollections, moveCourseToCollection, reorderCollectionCourses, saveCollection } from "./collections.js";
-import { listSales, salesFunnel, salesSummary } from "./commerce.js";
+import { groupSales, listSales, salesFunnel, salesSummary } from "./commerce.js";
 import { createLesson } from "./content.js";
 import {
 	createCourse,
@@ -46,6 +46,7 @@ import {
 import { addFlashcards, addQuizQuestions } from "./lesson-items.js";
 import { deleteLesson, deleteModule, getLesson, getModule, reorderLessons, updateLesson, updateModule } from "./module-admin.js";
 import { createModule, setPublished } from "./modules.js";
+import { getGroupPricing, setGroupPricing } from "./group-pricing.js";
 import { createOffer, deleteOffer, listOffers, setOfferActive, updateOffer } from "./offers.js";
 import { classroomProgress } from "./progress.js";
 import { getStudentDetail, listMembers, removeMember, setCourseGrants } from "./roster.js";
@@ -72,6 +73,8 @@ export const TOOLS = [
 	listOffers,
 	createOffer,
 	setOfferActive,
+	getGroupPricing,
+	setGroupPricing,
 	salesSummary,
 	// Carga masiva
 	importExam,
@@ -134,5 +137,6 @@ export const TOOLS = [
 	updateOffer,
 	deleteOffer,
 	listSales,
-	salesFunnel
+	salesFunnel,
+	groupSales
 ] as unknown as readonly Tool[];

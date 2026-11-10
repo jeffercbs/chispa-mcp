@@ -18,7 +18,7 @@ type OfferRow = {
 	course_offer_courses: { course_id: string }[] | null;
 };
 
-async function requireMonetizable(db: Db, classroomId: string) {
+export async function requireMonetizable(db: Db, classroomId: string) {
 	const { data } = await db.rpc("classroom_can_monetize", { classroom: classroomId });
 	if (!data) throw new ToolError("Esta aula todavía no tiene precios habilitados.");
 }

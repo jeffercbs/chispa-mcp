@@ -121,3 +121,54 @@ export const salesFunnel = defineTool({
 		};
 	}
 });
+
+type GroupSale = {
+	reference: string;
+	paid_at: string | null;
+	course_title: string | null;
+	extra_seats: number;
+	seats_assigned: number;
+	seats_invited: number;
+	amount_cents: number;
+	extra_cents: number;
+};
+
+export const groupSales = defineTool({
+	name: "group_sales",
+	title: "Ventas para varias personas",
+	description:
+		"Compras pagadas de un curso para varias personas en el aula: cuántas cuentas adicionales se vendieron, cuántas ya tienen correo asignado e invitación enviada, y cuánto se cobró por ellas. Sin correos ni datos de contacto.",
+	level: "manager",
+	readOnly: true,
+	input: z.object({
+		classroom_id: id("Aula"),
+		days: z.number().int().min(1).max(365).default(30).describe("Días hacia atrás"),
+		limit: z.number().int().min(1).max(200).default(50)
+	}),
+	async run({ db, currency }, input) {
+		const { data } = await db.rpc("classroom_group_sales", { room: input.classroom_id });
+		const since = Date.now() - input.days * 86_400_000;
+		const rows = ((data ?? []) as GroupSale[]).filter((row) => row.paid_at && new Date(row.paid_at).getTime() >= since);
+		const sum = (pick: (row: GroupSale) => number) => rows.reduce((total, row) => total + pick(row), 0);
+		return {
+			days: input.days,
+			currency,
+			purchases: rows.length,
+			extra_seats_sold: sum((row) => row.extra_seats),
+			extra_seats_assigned: sum((row) => row.seats_assigned),
+			extra_seats_pending: sum((row) => row.extra_seats - row.seats_assigned),
+			extra_revenue: sum((row) => row.extra_cents) / 100,
+			sales: rows.slice(0, input.limit).map((row) => ({
+				reference: row.reference,
+				paid_at: row.paid_at,
+				course: row.course_title ?? "Curso eliminado",
+				people: row.extra_seats + 1,
+				extra_seats: row.extra_seats,
+				assigned: row.seats_assigned,
+				invited: row.seats_invited,
+				total: row.amount_cents / 100,
+				extra: row.extra_cents / 100
+			}))
+		};
+	}
+});

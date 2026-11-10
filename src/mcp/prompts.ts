@@ -33,6 +33,14 @@ const PROMPTS: Prompt[] = [
 			`Revisa el avance de mi grupo con classroom_progress${dias ? ` (inactividad de ${dias} días o más)` : ""}. Dime en tono claro: 1) cómo va el grupo en general, 2) a quién conviene escribir primero y por qué, 3) lecciones donde se atoran. Si hay chats sin responder (list_waiting_chats), menciónalos. No envíes mensajes sin que yo los apruebe.`
 	},
 	{
+		name: "descuento_por_grupo",
+		title: "Configurar el descuento por grupo",
+		description: "Revisa y ajusta el descuento por cantidad de personas de un curso.",
+		arguments: [{ name: "curso", description: "Nombre del curso", required: false }],
+		text: ({ curso }) =>
+			`Quiero revisar el descuento por grupo${curso ? ` de «${curso}»` : " de mis cursos"}. Usa get_group_pricing y muéstrame, en una tabla corta, el descuento y el total para 2, 3, 4 y 5 personas. Si quiero cambiarlo, propón porcentajes que no bajen al sumar personas, enséñame cómo quedarían los precios y aplica set_group_pricing solo cuando yo confirme.`
+	},
+	{
 		name: "atender_solicitudes",
 		title: "Atender solicitudes y chats",
 		description: "Repasa solicitudes de ingreso y conversaciones pendientes.",

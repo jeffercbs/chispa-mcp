@@ -23,7 +23,8 @@ El asistente puede hacer todo lo que un profesor o administrador hace en las pan
 |              | `activate_trial_course`, `set_course_grants`                                                                                                                                                                                                      | administrador del aula  |
 | Chat         | `list_waiting_chats`, `get_chat_thread`, `reply_chat`, `set_chat_status`, `delete_chat`                                                                                                                                                           | equipo                  |
 | Ofertas      | `list_offers`, `create_offer`, `update_offer`, `set_offer_active`, `delete_offer`                                                                                                                                                                 | administrador del aula  |
-| Ventas       | `sales_summary`, `list_sales`, `sales_funnel`                                                                                                                                                                                                     | administrador del aula  |
+| Precio por grupo | `get_group_pricing`, `set_group_pricing` | equipo (administrador o profesor con acceso al curso) |
+| Ventas       | `sales_summary`, `list_sales`, `sales_funnel`, `group_sales`                                                                                                                                                                                                     | administrador del aula  |
 
 **Permisos de edición de contenido:** igual que en la plataforma (`can_edit_course`): quien creó el curso, el administrador del aula donde está vinculado o un profesor con acceso a él. Borrar o transferir un curso es solo de quien lo creó.
 
