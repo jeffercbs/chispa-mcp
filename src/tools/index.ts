@@ -46,6 +46,7 @@ import {
 import { addFlashcards, addQuizQuestions } from "./lesson-items.js";
 import { deleteLesson, deleteModule, getLesson, getModule, reorderLessons, updateLesson, updateModule } from "./module-admin.js";
 import { createModule, setPublished } from "./modules.js";
+import { linkSharedModule, listSharedModules, moveSharedModule, setCourseLibrary, unlinkSharedModule } from "./shared-modules.js";
 import { getGroupPricing, setGroupPricing } from "./group-pricing.js";
 import { createOffer, deleteOffer, listOffers, setOfferActive, updateOffer } from "./offers.js";
 import { classroomProgress } from "./progress.js";
@@ -86,6 +87,11 @@ export const TOOLS = [
 	deleteCourse,
 	transferCourse,
 	reorderModules,
+	listSharedModules,
+	linkSharedModule,
+	unlinkSharedModule,
+	moveSharedModule,
+	setCourseLibrary,
 	listCourseThemes,
 	saveTheme,
 	deleteTheme,

@@ -25,6 +25,25 @@ const PROMPTS: Prompt[] = [
 			`Quiero montar un curso sobre «${tema ?? "…"}». Hazme las preguntas mínimas (público, nivel, número de módulos), propón una estructura y espera mi visto bueno. Luego crea el curso con create_course, los módulos con create_module y las lecciones con import_module_content (usa dry_run primero). Deja todo en borrador y al final resume qué hay y qué falta para publicar.`
 	},
 	{
+		name: "crear_presentacion",
+		title: "Crear una presentación",
+		description: "Crea una lección en diapositivas con guion narrado, gráficas, fórmulas e ilustraciones.",
+		arguments: [{ name: "tema", description: "Tema de la presentación", required: true }],
+		text: ({ tema }) =>
+			`Quiero una presentación sobre «${tema ?? "…"}». Identifica el aula, el curso y el módulo con las herramientas de lectura y pregúntame lo mínimo (público, duración, qué debe recordar). Redáctala siguiendo la sección PRESENTACIONES de tus instrucciones: portada, 6-15 diapositivas separadas por ---, guion narrado con líneas > en cada una, y donde ayude una gráfica (\`\`\`chart), una fórmula ($…$) o una ilustración (\`\`\`svg). Muéstrame un resumen diapositiva por diapositiva y, con mi visto bueno, créala en borrador con create_lesson (format="presentacion"). Dime cómo verla y publicarla.`
+	},
+	{
+		name: "crear_juego_dinamico",
+		title: "Crear un juego de tabla periódica o fórmulas",
+		description: "Genera un juego de química (tabla periódica) o de cálculo con fórmulas que cambian sus números.",
+		arguments: [
+			{ name: "tipo", description: "tabla_periodica o formula", required: true },
+			{ name: "tema", description: "Tema del juego", required: false }
+		],
+		text: ({ tipo, tema }) =>
+			`Quiero un juego de tipo «${tipo ?? "formula"}»${tema ? ` sobre «${tema}»` : ""}. Identifica el aula, el curso, el módulo y la lección con las herramientas de lectura. Sigue la sección JUEGOS de tus instrucciones: propón entre 6 y 12 rondas variadas, valida cada fórmula mentalmente (rangos razonables, sin divisiones por cero) y enséñame el borrador. Con mi visto bueno, créalo con save_game en borrador, verifica con get_game y dime cómo probarlo y publicarlo.`
+	},
+	{
 		name: "revisar_grupo",
 		title: "Revisar el avance del grupo",
 		description: "Resume quién va bien, quién se está quedando atrás y qué hacer.",

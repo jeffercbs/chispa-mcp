@@ -33,4 +33,10 @@ describe("sanitizado", () => {
 		expect(text(100, "Título").safeParse("x".repeat(5000)).success).toBe(false);
 		expect(text(100, "Título").safeParse("x".repeat(100)).success).toBe(true);
 	});
+
+	it("conserva los bloques ```svg y limpia el resto", () => {
+		const out = richText('<svg onload="x()"></svg>\n\n```svg\n<svg viewBox="0 0 4 4"><circle r="1"/></svg>\n```', 1000);
+		expect(out).toContain("```svg\n<svg viewBox");
+		expect(out.split("```svg")[0]).not.toContain("<svg");
+	});
 });

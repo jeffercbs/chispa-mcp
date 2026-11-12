@@ -5,3 +5,10 @@ dist
 vault.key
 credentials.json
 *.pem
+
+# Skills y agentes de IA
+.claude/
+.agents/
+skills/
+agents/
+skills-lock.json

@@ -35,7 +35,7 @@ export const listCourses = defineTool({
 export const getCourseOutline = defineTool({
 	name: "get_course_outline",
 	title: "Índice del curso",
-	description: "Devuelve los módulos y lecciones de un curso del aula, con su estado de publicación.",
+	description: "Devuelve los módulos y lecciones de un curso del aula, con su estado de publicación. Los módulos compartidos de otro curso o biblioteca llevan shared: true.",
 	level: "team",
 	readOnly: true,
 	input: z.object({ classroom_id: id("Aula"), course_id: id("Curso") }),
@@ -43,10 +43,27 @@ export const getCourseOutline = defineTool({
 		await requireCourseInClassroom(db, input.classroom_id, input.course_id);
 		const { data: modules } = await db
 			.from("modules")
-			.select("id, number, title, is_published")
+			.select("id, number, title, is_published, position")
 			.eq("course_id", input.course_id)
 			.order("position");
-		const moduleRows = (modules ?? []) as { id: string; number: number; title: string; is_published: boolean }[];
+		type Row = { id: string; number: number; title: string; is_published: boolean; shared?: boolean; position?: number };
+		const own = ((modules ?? []) as (Row & { position: number })[]).map((row) => ({ ...row }));
+		const { data: linkRows } = await db.from("module_courses").select("module_id, position").eq("course_id", input.course_id);
+		const links = (linkRows ?? []) as { module_id: string; position: number }[];
+		const { data: sharedRows } = links.length
+			? await db
+					.from("modules")
+					.select("id, number, title, is_published")
+					.in(
+						"id",
+						links.map((link) => link.module_id)
+					)
+			: { data: [] };
+		const positions = new Map(links.map((link) => [link.module_id, link.position]));
+		const moduleRows: Row[] = [
+			...own,
+			...((sharedRows ?? []) as Row[]).map((row) => ({ ...row, shared: true, position: positions.get(row.id) ?? 0 }))
+		].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 		const { data: sessions } = moduleRows.length
 			? await db
 					.from("sessions")
@@ -69,6 +86,7 @@ export const getCourseOutline = defineTool({
 				number: mod.number,
 				title: mod.title,
 				published: mod.is_published,
+				...(mod.shared ? { shared: true } : {}),
 				lessons: byModule.get(mod.id) ?? []
 			}))
 		};

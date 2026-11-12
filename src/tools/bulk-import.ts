@@ -87,6 +87,7 @@ const lesson = z.object({
 	content: markdown(LIMITS.richText, "Contenido en Markdown"),
 	key_idea: optionalText(400, "Idea clave"),
 	objectives: z.array(text(300, "Objetivo")).max(20).optional(),
+	format: z.enum(["lectura", "presentacion", "actividad"]).default("lectura").describe("«presentacion» muestra el contenido como diapositivas"),
 	quiz: z.array(quizQuestion).max(50).optional().describe("Preguntas de quiz de esta lección"),
 	cards_text: z.string().max(100_000).optional().describe("Tarjetas, una por línea: «anverso | reverso»")
 });
@@ -142,7 +143,7 @@ export const importModuleContent = defineTool({
 					content: item.content,
 					key_idea: item.key_idea,
 					objectives: item.objectives ?? [],
-					format: "lectura",
+					format: item.format,
 					is_published: input.publish,
 					position: start + index,
 					number: start + index

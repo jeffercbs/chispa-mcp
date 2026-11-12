@@ -8,7 +8,7 @@ export const createLesson = defineTool({
 	name: "create_lesson",
 	title: "Crear lección",
 	description:
-		"Crea una lección de lectura al final de un módulo de un curso que puedes editar. Queda en borrador salvo que pidas publicarla; confirma con la persona antes de publicar.",
+		"Crea una lección (lectura, presentación con diapositivas o actividad) al final de un módulo de un curso que puedes editar. Queda en borrador salvo que pidas publicarla; confirma con la persona antes de publicar.",
 	level: "team",
 	readOnly: false,
 	input: z.object({
@@ -19,7 +19,10 @@ export const createLesson = defineTool({
 		content: markdown(60_000, "Contenido en Markdown"),
 		key_idea: optionalText(400, "La idea que debe quedar"),
 		objectives: z.array(text(300, "Objetivo")).max(20).optional().describe("Objetivos de aprendizaje"),
-		format: z.enum(["lectura", "presentacion", "actividad"]).default("lectura"),
+		format: z
+			.enum(["lectura", "presentacion", "actividad"])
+			.default("lectura")
+			.describe("«presentacion»: el contenido se parte en diapositivas con ---. Ver la sección PRESENTACIONES de las instrucciones."),
 		video_url: z.string().max(300).optional().describe("Enlace de YouTube"),
 		publish: z.boolean().default(false).describe("Publicarla de inmediato")
 	}),

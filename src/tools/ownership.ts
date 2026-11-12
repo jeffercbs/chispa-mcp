@@ -16,9 +16,15 @@ export async function ownedCourse(db: Db, _actor: Actor, classroomId: string, co
 		courseInClassroom(db, classroomId, courseId),
 		db.rpc("can_edit_course", { course: courseId })
 	]);
-	if (!inRoom) throw new ToolError(NOT_FOUND);
+	if (!inRoom && !(editable.data === true && (await isLibrary(db, courseId)))) throw new ToolError(NOT_FOUND);
 	if (editable.data !== true) throw new ToolError(NOT_EDITOR);
 	return { courseId };
+}
+
+/** Las bibliotecas de módulos compartidos no están vinculadas a un aula: se editan con el permiso del curso. */
+async function isLibrary(db: Db, courseId: string) {
+	const { data } = await db.from("courses").select("is_library").eq("id", courseId).maybeSingle();
+	return (data as { is_library: boolean } | null)?.is_library === true;
 }
 
 /** Acciones reservadas a quien creó el curso (borrar, transferir, mover de colección). */

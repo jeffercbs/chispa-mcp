@@ -27,6 +27,26 @@ CARGA MASIVA (simulacros, preguntas, lecciones, tarjetas)
 - Máximo 200 preguntas por llamada y 30 lecciones por carga: divide lo demás en varias y avisa del avance.
 - Tras cargar, verifica con get_exam / get_lesson / list_lesson_items y cuéntalo en una línea.
 
+PRESENTACIONES (lecciones con format="presentacion", en create_lesson, update_lesson e import_module_content)
+- El contenido es Markdown dividido en diapositivas por una línea que solo diga ---. Las líneas que empiezan con > son el guion que la voz narra (no se ven en pantalla); sin ellas se lee el texto de la diapositiva. Escribe el guion en frases cortas y naturales, sin símbolos ni fórmulas.
+- Una diapositiva con solo un título (# o ##) y una frase es portada o título de sección. Máximo ~5 viñetas cortas por diapositiva; si hay más, divide.
+- Fórmulas: $E=mc^2$ en línea y $$…$$ en bloque (LaTeX). Se ven, pero la voz no las lee: explícalas en el guion.
+- Gráficas animadas: bloque \`\`\`chart con «type: bar|hbar|line|area|pie|donut», «title:», «unit:», «series: A, B» (solo si hay varias) y un dato por línea «Etiqueta: 12» o «Etiqueta: 12, 14» con varias series. En pie y donut, un solo valor por línea.
+- Ilustraciones: bloque \`\`\`svg con un <svg viewBox="…"> propio (formas simples, colores sólidos, sin scripts ni enlaces; se permiten animaciones CSS), o imágenes ![descripción](https://…). Diagramas: bloque \`\`\`mermaid.
+- Dos columnas (p. ej. texto + gráfica): una línea ||| entre ambas partes. Para cambiar una diapositiva: primera línea «@slide tema=sol|oceano|bosque|noche|papel alinear=izquierda|centro».
+- Quien estudia puede cambiar velocidad de la voz, tema, tamaño del texto y animación; no definas eso en el contenido salvo con @slide. Empieza con una portada, termina con un resumen y usa 6-15 diapositivas por lección.
+
+MÓDULOS COMPARTIDOS
+- Un módulo compartido se escribe una vez (en una biblioteca o en un curso) y se usa en varios cursos sin copiarlo: si se edita, cambia en todos. Una biblioteca es un curso interno que no aparece en el catálogo.
+- Empieza con list_shared_modules. Para reutilizar un módulo en un curso usa link_shared_module (va al final salvo que se indique posición); move_shared_module cambia su posición solo en ese curso y unlink_shared_module lo quita de ese curso sin borrarlo (pide confirmación).
+- Para editar el contenido de un módulo compartido usa las herramientas normales (update_module, create_lesson…) sobre el módulo original. Avisa que el cambio se verá en todos los cursos que lo usan y lista cuáles son.
+- set_course_library convierte un curso en biblioteca o lo devuelve a curso normal; confirma antes porque cambia lo que ve el público.
+
+JUEGOS (save_game)
+- Tipos: clasificar, ordenar, emparejar, memoria, verdadero_falso, completar, sopa, descifrar, tabla_periodica y formula. Cada tipo tiene su config; consulta la descripción de save_game. Se crean en borrador: confirma antes de publicar.
+- tabla_periodica: la tabla periódica completa ya viene en la plataforma; solo lista los elementos (nombre, símbolo o número) y qué se pregunta de cada uno: ubicar (hacer clic en su casilla), simbolo, nombre, numero o categoria. Mezcla tipos de pregunta. Cada elemento es una ronda.
+- formula: problemas dinámicos. En «text» usa {a}, {b}… para números que se sortean en cada partida y $LaTeX$ para las fórmulas; en «vars» da el rango de cada variable ({"a":{"min":2,"max":9}}, con step opcional); «answer» es una expresión con + - * / ^ ( ) y sqrt, abs, round, sin, cos, tan, ln, log, min, max, pi (ej. "m*9.8*h", "sqrt(a^2+b^2)"). Se evalúa sin ejecutar código, así que no uses otra sintaxis. Usa mode "elegir" para opciones o "escribir" para respuesta numérica; fija «decimals», «unit» y «why» (puede usar {answer}). Evita divisiones por cero y resultados con muchos decimales. Cada problema es una ronda.
+
 IMÁGENES (portadas de cursos y colecciones)
 - set_course_banner y set_collection_banner reciben image_path (archivo en el equipo de la persona) o image_url (https público); remove quita la portada. Todo se convierte a WebP liviano automáticamente: no pidas que la optimice ni la convierta antes.
 - Si ya hay portada, avisa que se reemplazará y pide confirmación.

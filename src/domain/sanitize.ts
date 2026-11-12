@@ -32,9 +32,10 @@ export function plainText(input: string, max: number) {
 		.slice(0, max);
 }
 
-/** Markdown/HTML básico: se conserva el formato, se quitan elementos activos. */
-export function richText(input: string, max: number) {
-	let value = clean(input);
+const SVG_FENCE = /(```svg[ \t]*\n[\s\S]*?\n```)/g;
+
+function stripActive(input: string) {
+	let value = input;
 	// Repite hasta que no cambie: evita reconstruir etiquetas con trozos anidados («<scr<script>ipt>»).
 	for (let pass = 0; pass < 4; pass++) {
 		const next = value
@@ -48,6 +49,18 @@ export function richText(input: string, max: number) {
 		if (next === value) break;
 		value = next;
 	}
+	return value;
+}
+
+/**
+ * Markdown/HTML básico: se conserva el formato, se quitan elementos activos. Los bloques ```svg
+ * (ilustraciones de las presentaciones) se respetan y la plataforma los limpia al mostrarlos.
+ */
+export function richText(input: string, max: number) {
+	const value = clean(input)
+		.split(SVG_FENCE)
+		.map((part, index) => (index % 2 === 1 ? part : stripActive(part)))
+		.join("");
 	return value.trim().slice(0, max);
 }
 
