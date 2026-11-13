@@ -1,4 +1,6 @@
-export const SERVER_INFO = { name: "chispa-mcp", title: "Chispa · aulas", version: "0.2.0" };
+import { VERSION } from "../version.js";
+
+export const SERVER_INFO = { name: "chispa-mcp", title: "Chispa · aulas", version: VERSION };
 export const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"] as const;
 export const LATEST_VERSION = SUPPORTED_VERSIONS[0];
 

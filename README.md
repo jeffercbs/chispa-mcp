@@ -56,49 +56,50 @@ Al conectarse, el servidor entrega unas instrucciones al asistente (tono claro y
 
 **Fuera de alcance a propósito:** subir imágenes de ofertas, datos de contacto de compradores y el análisis geográfico de la audiencia. Tampoco se envían los avisos automáticos a estudiantes que la plataforma manda al publicar un módulo o una lección.
 
-## Instalación
+## Instalación (un solo comando)
 
-Requiere Node.js 22.12 o superior (22.12+, 24 o 26+).
-
-El paquete se publica en GitHub Packages (`@jeffercbs/chispa-mcp`).
-
-**Opción A — directo desde GitHub (sin token):**
+Requiere Node.js 22.12 o superior (22.12+, 24 o 26+). Con Claude Code:
 
 ```sh
-npx -y github:jeffercbs/chispa-mcp login
+claude mcp add chispa -- npx -y --prefer-online github:jeffercbs/chispa-mcp
 ```
 
-**Opción B — GitHub Packages:** crea un `.npmrc` con
+Eso es todo. Abre Claude Code y pídele «inicia sesión en Chispa»: el asistente usa su herramienta `login`, se abre el navegador y solo pulsas **Permitir**. No hace falta ejecutar nada más en la terminal.
 
-```
-@jeffercbs:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=<token con read:packages>
-```
-
-y ejecuta `npx -y @jeffercbs/chispa-mcp login`.
-
-## Autenticación
-
-1. `chispa-mcp login` abre el navegador en la pantalla de consentimiento de Guías Clave (OAuth 2.1 con PKCE de Supabase, redirección a `127.0.0.1`).
-2. Entras con tu cuenta de docente y apruebas el acceso.
-3. Los tokens quedan en `~/.config/chispa-mcp/credentials.json` cifrados (AES-256-GCM, permisos 0600) y se renuevan solos.
-4. `chispa-mcp whoami` muestra la cuenta; `chispa-mcp logout` borra la sesión local.
-
-No hay contraseñas ni claves de servicio en el paquete: el asistente actúa con el token de la persona y RLS decide qué ve.
-
-## Configurar tu cliente de IA
+Otros clientes (Codex, Gemini CLI, Cursor, Windsurf, VS Code): añade el servidor con el mismo `command`/`args` y pide el inicio de sesión igual. Ejemplo de `mcp.json`:
 
 ```json
 {
 	"mcpServers": {
-		"chispa": { "command": "npx", "args": ["-y", "github:jeffercbs/chispa-mcp"] }
+		"chispa": { "command": "npx", "args": ["-y", "--prefer-online", "github:jeffercbs/chispa-mcp"] }
 	}
 }
 ```
 
-Claude Code: `claude mcp add chispa -- npx -y github:jeffercbs/chispa-mcp`.
+### Actualizaciones automáticas
 
-Si no has iniciado sesión, las herramientas responden con la instrucción de ejecutar `login`.
+`--prefer-online` hace que `npx` consulte el repositorio en cada arranque y descargue la versión nueva si la hay. Además el servidor revisa al iniciar si existe una versión más reciente y deja lista la descarga; si la hay, `login` lo avisa. Para desactivar la revisión: `CHISPA_MCP_NO_UPDATE=1`.
+
+### Desinstalar
+
+| Cliente | Comando |
+| --- | --- |
+| Claude Code | `claude mcp remove chispa` |
+| Gemini CLI | `gemini mcp remove chispa` |
+| Codex, Cursor, otros | borra el bloque `chispa` de su archivo de configuración |
+
+Para borrar también la sesión y los datos locales: pide al asistente «cierra sesión en Chispa» (herramienta `logout`) o elimina la carpeta `~/.config/chispa-mcp`. Para revocar el acceso del todo, hazlo desde tu cuenta de Chispa.
+
+## Autenticación
+
+1. La herramienta `login` (o `chispa-mcp login` en terminal) abre el navegador en la pantalla de consentimiento de Guías Clave (OAuth 2.1 con PKCE de Supabase, redirección a `127.0.0.1`).
+2. Entras con tu cuenta de docente y apruebas el acceso.
+3. Los tokens quedan en `~/.config/chispa-mcp/credentials.json` cifrados (AES-256-GCM, permisos 0600) y se renuevan solos, unos minutos antes de vencer. Si varios clientes de IA abren el servidor a la vez, solo uno renueva (bloqueo de archivo) para no invalidar la sesión; un fallo de red nunca borra las credenciales.
+4. `whoami` / `logout` (herramienta `logout` o `chispa-mcp logout`) muestran la cuenta o cierran la sesión local.
+
+No hay contraseñas ni claves de servicio en el paquete: el asistente actúa con el token de la persona y RLS decide qué ve.
+
+La duración total de la sesión la fija Supabase (Authentication → Sessions: tiempo máximo e inactividad, y la vigencia del token de actualización del servidor OAuth).
 
 ## Variables (opcionales)
 

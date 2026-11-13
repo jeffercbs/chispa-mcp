@@ -1,9 +1,10 @@
 import type { z } from "zod";
 import type { Identity } from "../auth/identity.js";
+import type { Config } from "../config.js";
 import type { Actor, Level } from "../domain/access.js";
 import type { Db } from "../domain/supabase.js";
 
-export type ToolContext = { db: Db; identity: Identity; actor: Actor; currency: string };
+export type ToolContext = { db: Db; identity: Identity; actor: Actor; currency: string; config?: Config };
 
 export type Tool<Schema extends z.ZodObject = z.ZodObject> = {
 	name: string;
@@ -13,6 +14,8 @@ export type Tool<Schema extends z.ZodObject = z.ZodObject> = {
 	input: Schema;
 	readOnly: boolean;
 	destructive?: boolean;
+	/** Se puede usar sin sesión iniciada (por ejemplo, para iniciarla). */
+	public?: boolean;
 	run: (context: ToolContext, input: z.output<Schema>) => Promise<Record<string, unknown>>;
 };
 

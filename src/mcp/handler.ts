@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Identity } from "../auth/identity.js";
-import { resolveActor } from "../domain/access.js";
+import type { Config } from "../config.js";
+import { resolveActor, resolvePermissions } from "../domain/access.js";
 import { audit } from "../domain/audit.js";
 import { GENERIC_FAILURE, ToolError } from "../domain/errors.js";
 import type { WriteLimiter } from "../domain/rate.js";
@@ -18,6 +19,7 @@ export type HandlerContext = {
 	tools: readonly Tool[];
 	/** Ajustes operativos (ver config.ts). */
 	policy?: { roleCacheSeconds: number; currency: string };
+	config?: Config;
 	/** Freno a las escrituras por minuto. */
 	limiter?: WriteLimiter;
 };
@@ -86,9 +88,12 @@ async function callTool(request: RpcRequest, context: HandlerContext): Promise<R
 	}
 
 	try {
-		const actor = await resolveActor(context.db, context.identity.userId, tool.level, classroomId, context.policy?.roleCacheSeconds ?? 0);
+		// Las herramientas públicas (login, logout) funcionan sin sesión, así que no hay rol que resolver.
+		const actor = tool.public
+			? { userId: context.identity.userId, classroomId: null, role: null, isOwner: false, permissions: resolvePermissions(null, null), systemAdmin: false }
+			: await resolveActor(context.db, context.identity.userId, tool.level, classroomId, context.policy?.roleCacheSeconds ?? 0);
 		const value = await tool.run(
-			{ db: context.db, identity: context.identity, actor, currency: context.policy?.currency ?? DEFAULT_CURRENCY },
+			{ db: context.db, identity: context.identity, actor, currency: context.policy?.currency ?? DEFAULT_CURRENCY, config: context.config },
 			parsed.data
 		);
 		await log("ok");

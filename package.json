@@ -1,6 +1,6 @@
 {
 	"name": "@jeffercbs/chispa-mcp",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "Servidor MCP de Chispa: conecta asistentes de IA a las aulas con los permisos de cada docente. Inicia sesión con tu cuenta del proyecto.",
 	"license": "MIT",
 	"type": "module",

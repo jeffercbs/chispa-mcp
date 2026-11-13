@@ -7,8 +7,10 @@ import { LIMITS } from "./limits.js";
 import { handleRequest } from "./mcp/handler.js";
 import { failure, parseRequest, RPC, type RpcResponse, success } from "./mcp/protocol.js";
 import { TOOLS } from "./tools/index.js";
+import { SESSION_TOOLS } from "./tools/session.js";
+import { checkForUpdate } from "./update.js";
 
-export const LOGIN_HINT = "No has iniciado sesión. Ejecuta `npx @jeffercbs/chispa-mcp login` en una terminal y vuelve a intentarlo.";
+export const LOGIN_HINT = "No has iniciado sesión. Llama a la herramienta `login`: abre el navegador para que la persona pulse «Permitir» y después repite lo que estabas haciendo.";
 
 const send = (message: RpcResponse) => process.stdout.write(`${JSON.stringify(message)}\n`);
 
@@ -17,6 +19,8 @@ export async function serve(config: Config) {
 	const auditSecret = crypto.randomUUID() + crypto.randomUUID();
 	const limiter = new WriteLimiter(config.writesPerMinute);
 	const policy = { roleCacheSeconds: config.roleCacheSeconds, currency: config.currency };
+	const tools = [...SESSION_TOOLS, ...TOOLS];
+	void checkForUpdate();
 	const lines = createInterface({ input: process.stdin, crlfDelay: Number.POSITIVE_INFINITY });
 
 	for await (const line of lines) {
@@ -44,8 +48,9 @@ export async function serve(config: Config) {
 
 		try {
 			const calling = request.method === "tools/call";
-			const identity = calling ? await currentIdentity(config) : null;
-			if (calling && !identity) {
+			const open = calling && tools.some((tool) => tool.public && tool.name === request.params?.name);
+			const identity = calling && !open ? await currentIdentity(config) : null;
+			if (calling && !open && !identity) {
 				if (request.id !== undefined) send(success(request.id, { content: [{ type: "text", text: LOGIN_HINT }], isError: true }));
 				continue;
 			}
@@ -55,7 +60,8 @@ export async function serve(config: Config) {
 				auditSecret,
 				policy,
 				limiter,
-				tools: TOOLS
+				config,
+				tools
 			});
 			if (response) send(response);
 		} catch {

@@ -102,7 +102,15 @@ function openBrowser(url: string) {
 	}
 }
 
-export async function login(config: Config, log: (message: string) => void): Promise<void> {
+export type LoginFlow = {
+	/** Dirección que la persona debe abrir (el navegador ya se intentó abrir solo). */
+	url: string;
+	/** Se resuelve cuando la persona aprueba y los tokens quedan guardados; se rechaza si cancela o se agota el tiempo. */
+	finished: Promise<void>;
+};
+
+/** Prepara el inicio de sesión y deja el servidor local escuchando; no espera a que la persona apruebe. */
+export async function beginLogin(config: Config): Promise<LoginFlow> {
 	const endpoints = await discover(config);
 	const redirectUri = `http://127.0.0.1:${config.port}/callback`;
 	const clientId = await ensureClient(config, endpoints, redirectUri);
@@ -120,7 +128,13 @@ export async function login(config: Config, log: (message: string) => void): Pro
 		code_challenge_method: "S256"
 	}).toString();
 
-	const code = await new Promise<string>((resolve, reject) => {
+	let resolveListening!: () => void;
+	let rejectListening!: (error: Error) => void;
+	const listening = new Promise<void>((resolve, reject) => {
+		resolveListening = resolve;
+		rejectListening = reject;
+	});
+	const codePromise = new Promise<string>((resolve, reject) => {
 		const reply = (res: import("node:http").ServerResponse, kind: PageKind, detail?: string) => {
 			const page = renderPage(kind, detail);
 			res.writeHead(page.status, PAGE_HEADERS).end(page.html);
@@ -168,24 +182,37 @@ export async function login(config: Config, log: (message: string) => void): Pro
 		}, config.loginTimeoutMinutes * 60_000);
 		server.on("error", (error: NodeJS.ErrnoException) => {
 			clearTimeout(timer);
-			reject(
-				error.code === "EADDRINUSE" ? new Error(`El puerto ${config.port} está ocupado. Usa CHISPA_MCP_PORT con otro puerto.`) : error
-			);
+			const failure =
+				error.code === "EADDRINUSE" ? new Error(`El puerto ${config.port} está ocupado. Usa CHISPA_MCP_PORT con otro puerto.`) : error;
+			rejectListening(failure);
+			reject(failure);
 		});
 		server.listen(config.port, "127.0.0.1", () => {
-			log("Abre esta dirección para autorizar el acceso con tu cuenta de docente:\n");
-			log(`  ${authorizeUrl.toString()}\n`);
 			openBrowser(authorizeUrl.toString());
+			resolveListening();
 		});
 	});
+	codePromise.catch(() => undefined);
+	await listening;
 
-	const tokens = await requestTokens(endpoints.token, {
-		grant_type: "authorization_code",
-		code,
-		redirect_uri: redirectUri,
-		client_id: clientId,
-		code_verifier: verifier
+	const finished = codePromise.then(async (code) => {
+		const tokens = await requestTokens(endpoints.token, {
+			grant_type: "authorization_code",
+			code,
+			redirect_uri: redirectUri,
+			client_id: clientId,
+			code_verifier: verifier
+		});
+		const stored = await readCredentials(config.dir, config.url);
+		await writeCredentials(config.dir, { ...stored, tokens });
 	});
-	const stored = await readCredentials(config.dir, config.url);
-	await writeCredentials(config.dir, { ...stored, tokens });
+	return { url: authorizeUrl.toString(), finished };
+}
+
+/** Inicio de sesión desde la terminal: muestra la dirección y espera a que la persona apruebe. */
+export async function login(config: Config, log: (message: string) => void): Promise<void> {
+	const flow = await beginLogin(config);
+	log("Abre esta dirección para autorizar el acceso con tu cuenta de docente:\n");
+	log(`  ${flow.url}\n`);
+	await flow.finished;
 }
