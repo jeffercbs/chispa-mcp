@@ -61,7 +61,7 @@ Al conectarse, el servidor entrega unas instrucciones al asistente (tono claro y
 Requiere Node.js 22.12 o superior (22.12+, 24 o 26+). Con Claude Code:
 
 ```sh
-claude mcp add chispa -- npx -y --prefer-online github:jeffercbs/chispa-mcp
+claude mcp add chispa -- npx -y github:jeffercbs/chispa-mcp
 ```
 
 Eso es todo. Abre Claude Code y pídele «inicia sesión en Chispa»: el asistente usa su herramienta `login`, se abre el navegador y solo pulsas **Permitir**. No hace falta ejecutar nada más en la terminal.
@@ -71,14 +71,14 @@ Otros clientes (Codex, Gemini CLI, Cursor, Windsurf, VS Code): añade el servido
 ```json
 {
 	"mcpServers": {
-		"chispa": { "command": "npx", "args": ["-y", "--prefer-online", "github:jeffercbs/chispa-mcp"] }
+		"chispa": { "command": "npx", "args": ["-y", "github:jeffercbs/chispa-mcp"] }
 	}
 }
 ```
 
 ### Actualizaciones automáticas
 
-`--prefer-online` hace que `npx` consulte el repositorio en cada arranque y descargue la versión nueva si la hay. Además el servidor revisa al iniciar si existe una versión más reciente y deja lista la descarga; si la hay, `login` lo avisa. Para desactivar la revisión: `CHISPA_MCP_NO_UPDATE=1`.
+El arranque no consulta la red (así conecta rápido aunque arranquen varios MCP a la vez). El servidor revisa en segundo plano si hay una versión más reciente y deja lista la descarga para el próximo arranque; `login` lo avisa. Para desactivar la revisión: `CHISPA_MCP_NO_UPDATE=1`.
 
 ### Desinstalar
 

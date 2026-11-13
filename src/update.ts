@@ -32,6 +32,8 @@ export async function checkForUpdate(): Promise<void> {
 		latest = body.version;
 		if (!pendingUpdate()) return;
 		console.error(JSON.stringify({ event: "mcp.update", from: VERSION, to: latest }));
+		// Con calma: no compite con el arranque de este ni de otros servidores MCP.
+		await new Promise((resolve) => setTimeout(resolve, 45_000));
 		const child = spawn("npx", ["-y", "--prefer-online", PACKAGE_SPEC, "--version"], { stdio: "ignore", detached: true, shell: process.platform === "win32" });
 		child.on("error", () => undefined);
 		child.unref();
