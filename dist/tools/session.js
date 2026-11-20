@@ -2,9 +2,13 @@ import { z } from "zod";
 import { beginLogin } from "../auth/oauth.js";
 import { currentIdentity } from "../auth/session.js";
 import { clearTokens } from "../auth/store.js";
+import { forgetRoles } from "../domain/access.js";
+import { aliases } from "../domain/aliases.js";
 import { userClient } from "../domain/supabase.js";
 import { defineTool } from "../mcp/tool.js";
 import { pendingUpdate } from "../update.js";
+import { forgetDefaultClassroom } from "./classrooms.js";
+import { forgetEditable } from "./ownership.js";
 /** Cuánto espera `login` a que la persona apruebe antes de devolver la dirección y seguir esperando. */
 const WAIT_MS = 40_000;
 let current = null;
@@ -81,6 +85,10 @@ export const logout = defineTool({
             throw new Error("Configuración no disponible.");
         const removed = await clearTokens(config.dir, config.url);
         current = null;
+        forgetRoles();
+        forgetEditable();
+        forgetDefaultClassroom();
+        await aliases.clear();
         return { status: "signed_out", message: removed ? "Sesión cerrada en este equipo." : "No había sesión guardada." };
     }
 });

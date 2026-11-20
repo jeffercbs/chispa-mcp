@@ -4,7 +4,7 @@ const PROMPTS = [
         title: "Cargar un simulacro",
         description: "Crea un examen o simulacro completo a partir de preguntas que pegues o describas.",
         arguments: [{ name: "tema", description: "Tema o módulo del simulacro", required: false }],
-        text: ({ tema }) => `Quiero cargar un simulacro${tema ? ` sobre «${tema}»` : ""}. Guíame paso a paso: 1) identifica el aula, el curso y el módulo con las herramientas de lectura; 2) pídeme las preguntas (o redáctalas conmigo) y revisa que cada una tenga una única respuesta correcta y una explicación; 3) valida todo con import_exam en dry_run=true y muéstrame un resumen; 4) con mi confirmación, cárgalo en borrador; 5) verifica con get_exam y dime cómo publicarlo.`
+        text: ({ tema }) => `Quiero cargar un simulacro${tema ? ` sobre «${tema}»` : ""}. Guíame paso a paso: 1) identifica el aula, el curso y el módulo con las herramientas de lectura; 2) pídeme las preguntas (o redáctalas conmigo) y revisa que cada una tenga una única respuesta correcta y una explicación; 3) valida todo con import_exam en dry_run=true y muéstrame un resumen; 4) con mi confirmación, cárgalo en borrador; 5) verifica con get_exam (view=resumen) y dime cómo publicarlo.`
     },
     {
         name: "crear_curso_completo",
@@ -28,7 +28,7 @@ const PROMPTS = [
             { name: "tipo", description: "tabla_periodica o formula", required: true },
             { name: "tema", description: "Tema del juego", required: false }
         ],
-        text: ({ tipo, tema }) => `Quiero un juego de tipo «${tipo ?? "formula"}»${tema ? ` sobre «${tema}»` : ""}. Identifica el aula, el curso, el módulo y la lección con las herramientas de lectura. Sigue la sección JUEGOS de tus instrucciones: propón entre 6 y 12 rondas variadas, valida cada fórmula mentalmente (rangos razonables, sin divisiones por cero) y enséñame el borrador. Con mi visto bueno, créalo con save_game en borrador, verifica con get_game y dime cómo probarlo y publicarlo.`
+        text: ({ tipo, tema }) => `Quiero un juego de tipo «${tipo ?? "formula"}»${tema ? ` sobre «${tema}»` : ""}. Identifica el aula, el curso, el módulo y la lección con las herramientas de lectura. Lee guide(topic=juegos): propón entre 6 y 12 rondas variadas, valida cada fórmula mentalmente (rangos razonables, sin divisiones por cero) y enséñame el borrador. Con mi visto bueno, créalo con save_game en borrador, verifica con get_game y dime cómo probarlo y publicarlo.`
     },
     {
         name: "revisar_grupo",

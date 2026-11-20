@@ -289,26 +289,6 @@ export const saveTheme = defineTool({
         return { theme_id: themeId };
     }
 });
-export const deleteTheme = defineTool({
-    name: "delete_theme",
-    title: "Borrar tema",
-    description: "Borra un tema del curso. Los materiales dejan de estar asociados a él.",
-    level: "team",
-    readOnly: false,
-    destructive: true,
-    input: z.object({ classroom_id: id("Aula"), theme_id: id("Tema") }),
-    async run({ db, actor }, input) {
-        const { data } = await db.from("course_themes").select("course_id").eq("id", input.theme_id).maybeSingle();
-        const courseId = data?.course_id;
-        if (!courseId)
-            throw new ToolError(NOT_FOUND);
-        await ownedCourse(db, actor, input.classroom_id, courseId);
-        const { error } = await db.from("course_themes").delete().eq("id", input.theme_id);
-        if (error)
-            throw new ToolError("No pudimos borrar el tema.");
-        return { deleted: true };
-    }
-});
 const THEME_KINDS = ["sesion", "pregunta_quiz", "pregunta_examen", "tarjeta", "juego", "escenario"];
 async function parentOf(db, table, column, rowId) {
     if (!rowId)

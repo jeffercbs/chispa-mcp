@@ -1,26 +1,27 @@
 import { z } from "zod";
+import { aliases } from "../domain/aliases.js";
 import { NOT_FOUND, ToolError } from "../domain/errors.js";
-import { defined, id, optionalText, patchMarkdown, patchText, text } from "../domain/sanitize.js";
+import { defined, id, patchMarkdown, patchText } from "../domain/sanitize.js";
 import { ENUMS, LIMITS } from "../limits.js";
+import { rawText } from "../mcp/encode.js";
 import { defineTool } from "../mcp/tool.js";
 import { ownedParent } from "./evaluations.js";
-import { nextPosition } from "./ownership.js";
 const confirm = z.literal(true).describe("Debe ser true: la persona confirmó esta acción irreversible");
-async function questionExam(db, actor, classroomId, questionId) {
+async function _questionExam(db, actor, classroomId, questionId) {
     const { data } = await db.from("exam_questions").select("exam_id").eq("id", questionId).maybeSingle();
     const examId = data?.exam_id;
     if (!examId)
         throw new ToolError(NOT_FOUND);
     return { examId, ...(await ownedParent(db, actor, classroomId, "exams", examId)) };
 }
-async function criterionScenario(db, actor, classroomId, criterionId) {
+async function _criterionScenario(db, actor, classroomId, criterionId) {
     const { data } = await db.from("scenario_criteria").select("scenario_id").eq("id", criterionId).maybeSingle();
     const scenarioId = data?.scenario_id;
     if (!scenarioId)
         throw new ToolError(NOT_FOUND);
     return { scenarioId, ...(await ownedParent(db, actor, classroomId, "scenarios", scenarioId)) };
 }
-async function lessonInModule(db, moduleId, sessionId) {
+async function _lessonInModule(db, moduleId, sessionId) {
     if (!sessionId)
         return null;
     const { data } = await db.from("sessions").select("id").eq("id", sessionId).eq("module_id", moduleId).maybeSingle();
@@ -28,31 +29,94 @@ async function lessonInModule(db, moduleId, sessionId) {
         throw new ToolError("Elige una lección de este módulo.");
     return sessionId;
 }
+const EXAM_COLUMNS = "title, description, is_published, repeat_mode, repeat_days, repeat_hours, max_attempts, pass_percent, time_limit_minutes, review_mode, feedback_pass, feedback_fail, practice_enabled, practice_min, practice_max";
+const QUESTION_FIELDS = ["prompt", "options", "correct", "explanation", "topic", "lesson"];
+const pipe = (value) => value.replace(/\r?\n/g, "\\n").replace(/\|/g, "/");
+/** Mismo formato que la carga masiva, con el ID delante: se edita y se reenvía con edit_items. */
+export function questionLine(row, fields, lessonNumber, ref) {
+    const parts = [ref, pipe(row.prompt)];
+    if (fields.has("options"))
+        parts.push(...row.options.map((option, index) => `${index === row.correct_index ? "*" : ""}${pipe(option)}`));
+    if (fields.has("explanation") && row.explanation)
+        parts.push(`explicación: ${pipe(row.explanation)}`);
+    if (fields.has("topic") && row.topic)
+        parts.push(`tema: ${pipe(row.topic)}`);
+    const lesson = fields.has("lesson") ? lessonNumber(row.session_id) : undefined;
+    if (lesson)
+        parts.push(`lección: ${lesson}`);
+    return parts.join(" | ");
+}
 export const getExam = defineTool({
     name: "get_exam",
     title: "Detalle del examen",
-    description: "Devuelve la configuración de un simulacro o examen y todas sus preguntas con sus IDs.",
+    description: "Configuración de un examen y, si se piden, sus preguntas. view: «resumen» (configuración, total y temas; por defecto), «preguntas» (tabla) o «lineas» (formato de carga con ID delante, ideal para corregir y reenviar con edit_items). fields limita columnas; topic y search filtran; offset/limit paginan.",
     level: "team",
     readOnly: true,
-    input: z.object({ classroom_id: id("Aula"), exam_id: id("Examen") }),
+    input: z.object({
+        classroom_id: id("Aula"),
+        exam_id: id("Examen"),
+        view: z.enum(["resumen", "preguntas", "lineas"]).default("resumen"),
+        fields: z.array(z.enum(QUESTION_FIELDS)).optional().describe("Por defecto prompt, options, correct"),
+        topic: z.string().max(80).optional(),
+        search: z.string().max(120).optional().describe("Texto dentro del enunciado"),
+        offset: z.number().int().min(0).max(10_000).default(0),
+        limit: z.number().int().min(1).max(LIMITS.bulkQuestions).default(LIMITS.pageDefault)
+    }),
     async run({ db, actor }, input) {
-        await ownedParent(db, actor, input.classroom_id, "exams", input.exam_id);
-        const [{ data: exam }, { data: questions }] = await Promise.all([
-            db.from("exams").select("*").eq("id", input.exam_id).maybeSingle(),
-            db
-                .from("exam_questions")
-                .select("id, prompt, options, correct_index, explanation, topic, session_id, position")
-                .eq("exam_id", input.exam_id)
-                .order("position")
+        const { moduleId } = await ownedParent(db, actor, input.classroom_id, "exams", input.exam_id);
+        if (input.view === "resumen") {
+            const [{ data: exam }, { data: topics, count }] = await Promise.all([
+                db.from("exams").select(EXAM_COLUMNS).eq("id", input.exam_id).maybeSingle(),
+                db.from("exam_questions").select("topic", { count: "exact" }).eq("exam_id", input.exam_id).limit(LIMITS.examQuestions)
+            ]);
+            if (!exam)
+                throw new ToolError(NOT_FOUND);
+            const byTopic = new Map();
+            for (const row of (topics ?? [])) {
+                const key = row.topic?.trim() || "(sin tema)";
+                byTopic.set(key, (byTopic.get(key) ?? 0) + 1);
+            }
+            return {
+                ...exam,
+                questions: count ?? 0,
+                topics: [...byTopic].map(([topic, total]) => ({ topic, total }))
+            };
+        }
+        const fields = new Set(input.fields ?? ["prompt", "options", "correct"]);
+        fields.add("prompt");
+        let query = db
+            .from("exam_questions")
+            .select("id, prompt, options, correct_index, explanation, topic, session_id", { count: "exact" })
+            .eq("exam_id", input.exam_id);
+        if (input.topic)
+            query = query.ilike("topic", input.topic.replace(/[%_]/g, ""));
+        if (input.search)
+            query = query.ilike("prompt", `%${input.search.replace(/[%_]/g, "")}%`);
+        const [{ data, count }, { data: sessions }] = await Promise.all([
+            query.order("position").range(input.offset, input.offset + input.limit - 1),
+            fields.has("lesson") ? db.from("sessions").select("id, number").eq("module_id", moduleId) : Promise.resolve({ data: [] })
         ]);
-        if (!exam)
-            throw new ToolError(NOT_FOUND);
+        const rows = (data ?? []);
+        const numbers = new Map((sessions ?? []).map((row) => [row.id, row.number]));
+        const lessonNumber = (sessionId) => (sessionId ? numbers.get(sessionId) : undefined);
+        const total = count ?? rows.length;
+        const next = input.offset + rows.length < total ? input.offset + rows.length : null;
+        if (input.view === "lineas") {
+            const header = `# ${rows.length} de ${total} preguntas${next !== null ? ` (siguiente offset=${next})` : ""}`;
+            const lines = rows.map((row) => questionLine(row, fields, lessonNumber, aliases.alias(row.id)));
+            return rawText([header, ...lines].join("\n"));
+        }
         return {
-            exam,
-            questions: (questions ?? []).map(({ id: questionId, correct_index, ...rest }) => ({
-                question_id: questionId,
-                correct: correct_index + 1,
-                ...rest
+            total,
+            ...(next !== null ? { next_offset: next } : {}),
+            questions: rows.map((row) => ({
+                id: row.id,
+                prompt: row.prompt,
+                ...(fields.has("options") ? { options: row.options } : {}),
+                ...(fields.has("correct") ? { correct: row.correct_index + 1 } : {}),
+                ...(fields.has("explanation") ? { explanation: row.explanation } : {}),
+                ...(fields.has("topic") ? { topic: row.topic } : {}),
+                ...(fields.has("lesson") ? { lesson: lessonNumber(row.session_id) } : {})
             }))
         };
     }
@@ -159,93 +223,25 @@ export const deleteExam = defineTool({
         return { deleted: true };
     }
 });
-export const saveExamQuestion = defineTool({
-    name: "save_exam_question",
-    title: "Crear o editar una pregunta de examen",
-    description: "Crea una pregunta de examen o edita una existente (envía question_id). Para muchas preguntas usa add_exam_questions.",
-    level: "team",
-    readOnly: false,
-    input: z
-        .object({
-        classroom_id: id("Aula"),
-        exam_id: id("Examen"),
-        question_id: id("Pregunta a editar").optional(),
-        prompt: text(2000, "Pregunta"),
-        options: z.array(text(500, "Opción")).min(2).max(6),
-        correct: z.number().int().min(1).max(6).describe("Número de la opción correcta, desde 1"),
-        explanation: optionalText(3000, "Explicación"),
-        topic: optionalText(80, "Tema"),
-        session_id: id("Lección del módulo que conviene repasar").optional(),
-        position: z.number().int().min(1).max(10_000).optional()
-    })
-        .refine((item) => item.correct <= item.options.length, { error: "La opción correcta está fuera de rango." }),
-    async run({ db, actor }, input) {
-        const { moduleId } = await ownedParent(db, actor, input.classroom_id, "exams", input.exam_id);
-        const sessionId = await lessonInModule(db, moduleId, input.session_id);
-        const row = defined({
-            exam_id: input.exam_id,
-            prompt: input.prompt,
-            options: input.options,
-            correct_index: input.correct - 1,
-            explanation: input.explanation,
-            topic: input.topic,
-            session_id: sessionId,
-            position: input.position ?? (input.question_id ? undefined : await nextPosition(db, "exam_questions", "exam_id", input.exam_id))
-        });
-        if (input.question_id) {
-            const { data, error } = await db
-                .from("exam_questions")
-                .update(row)
-                .eq("id", input.question_id)
-                .eq("exam_id", input.exam_id)
-                .select("id")
-                .maybeSingle();
-            if (error)
-                throw new ToolError("No pudimos guardar la pregunta.");
-            if (!data)
-                throw new ToolError(NOT_FOUND);
-            return { question_id: input.question_id };
-        }
-        const { count } = await db.from("exam_questions").select("id", { count: "exact", head: true }).eq("exam_id", input.exam_id);
-        if ((count ?? 0) >= LIMITS.examQuestions)
-            throw new ToolError(`Un examen admite hasta ${LIMITS.examQuestions} preguntas.`);
-        const { data, error } = await db.from("exam_questions").insert(row).select("id").single();
-        if (error || !data)
-            throw new ToolError("No pudimos guardar la pregunta.");
-        return { question_id: data.id };
-    }
-});
-export const deleteExamQuestion = defineTool({
-    name: "delete_exam_question",
-    title: "Borrar pregunta de examen",
-    description: "Borra una pregunta de un examen.",
-    level: "team",
-    readOnly: false,
-    destructive: true,
-    input: z.object({ classroom_id: id("Aula"), question_id: id("Pregunta") }),
-    async run({ db, actor }, input) {
-        await questionExam(db, actor, input.classroom_id, input.question_id);
-        const { error } = await db.from("exam_questions").delete().eq("id", input.question_id);
-        if (error)
-            throw new ToolError("No pudimos borrar la pregunta.");
-        return { deleted: true };
-    }
-});
 export const getScenario = defineTool({
     name: "get_scenario",
     title: "Detalle del escenario",
-    description: "Devuelve un escenario con su respuesta de referencia, mensajes de resultado y rúbrica (criterios con sus IDs).",
+    description: "Escenario con su respuesta de referencia, mensajes de resultado y rúbrica (criterios con ID, editables con edit_items).",
     level: "team",
     readOnly: true,
     input: z.object({ classroom_id: id("Aula"), scenario_id: id("Escenario") }),
     async run({ db, actor }, input) {
         await ownedParent(db, actor, input.classroom_id, "scenarios", input.scenario_id);
         const [{ data: scenario }, { data: solution }, { data: criteria }] = await Promise.all([
-            db.from("scenarios").select("*").eq("id", input.scenario_id).maybeSingle(),
+            db
+                .from("scenarios")
+                .select("title, situation, question, is_published, repeat_mode, repeat_days, max_attempts, pass_percent, min_chars")
+                .eq("id", input.scenario_id)
+                .maybeSingle(),
             db.from("scenario_solutions").select("model_answer, feedback_pass, feedback_fail").eq("scenario_id", input.scenario_id).maybeSingle(),
             db
                 .from("scenario_criteria")
-                .select("id, label, if_met, if_missed, topic, session_id, weight, position")
+                .select("id, label, if_met, if_missed, topic, weight")
                 .eq("scenario_id", input.scenario_id)
                 .order("position")
         ]);
@@ -254,7 +250,7 @@ export const getScenario = defineTool({
         return {
             scenario,
             solution: solution ?? null,
-            criteria: (criteria ?? []).map(({ id: criterionId, ...rest }) => ({ criterion_id: criterionId, ...rest }))
+            criteria: criteria ?? []
         };
     }
 });
@@ -346,73 +342,6 @@ export const deleteScenario = defineTool({
         const { error } = await db.from("scenarios").delete().eq("id", input.scenario_id);
         if (error)
             throw new ToolError("No pudimos borrar el escenario.");
-        return { deleted: true };
-    }
-});
-export const saveScenarioCriterion = defineTool({
-    name: "save_scenario_criterion",
-    title: "Crear o editar un criterio de la rúbrica",
-    description: "Crea un criterio de la rúbrica de un escenario o edita uno existente (envía criterion_id).",
-    level: "team",
-    readOnly: false,
-    input: z.object({
-        classroom_id: id("Aula"),
-        scenario_id: id("Escenario"),
-        criterion_id: id("Criterio a editar").optional(),
-        label: text(500, "Qué debe contener una buena respuesta"),
-        if_met: optionalText(600, "Mensaje si lo cumple"),
-        if_missed: optionalText(600, "Pista si no lo cumple"),
-        topic: optionalText(80, "Tema"),
-        session_id: id("Lección del módulo que conviene repasar").optional(),
-        weight: z.number().int().min(1).max(5).default(1),
-        position: z.number().int().min(1).max(200).optional()
-    }),
-    async run({ db, actor }, input) {
-        const { moduleId } = await ownedParent(db, actor, input.classroom_id, "scenarios", input.scenario_id);
-        const sessionId = await lessonInModule(db, moduleId, input.session_id);
-        const row = defined({
-            scenario_id: input.scenario_id,
-            label: input.label,
-            if_met: input.if_met,
-            if_missed: input.if_missed,
-            topic: input.topic,
-            session_id: sessionId,
-            weight: input.weight,
-            position: input.position ?? (input.criterion_id ? undefined : await nextPosition(db, "scenario_criteria", "scenario_id", input.scenario_id))
-        });
-        if (input.criterion_id) {
-            const { data, error } = await db
-                .from("scenario_criteria")
-                .update(row)
-                .eq("id", input.criterion_id)
-                .eq("scenario_id", input.scenario_id)
-                .select("id")
-                .maybeSingle();
-            if (error)
-                throw new ToolError("No pudimos guardar el criterio.");
-            if (!data)
-                throw new ToolError(NOT_FOUND);
-            return { criterion_id: input.criterion_id };
-        }
-        const { data, error } = await db.from("scenario_criteria").insert(row).select("id").single();
-        if (error || !data)
-            throw new ToolError("No pudimos guardar el criterio.");
-        return { criterion_id: data.id };
-    }
-});
-export const deleteScenarioCriterion = defineTool({
-    name: "delete_scenario_criterion",
-    title: "Borrar criterio de la rúbrica",
-    description: "Borra un criterio de la rúbrica de un escenario.",
-    level: "team",
-    readOnly: false,
-    destructive: true,
-    input: z.object({ classroom_id: id("Aula"), criterion_id: id("Criterio") }),
-    async run({ db, actor }, input) {
-        await criterionScenario(db, actor, input.classroom_id, input.criterion_id);
-        const { error } = await db.from("scenario_criteria").delete().eq("id", input.criterion_id);
-        if (error)
-            throw new ToolError("No pudimos borrar el criterio.");
         return { deleted: true };
     }
 });

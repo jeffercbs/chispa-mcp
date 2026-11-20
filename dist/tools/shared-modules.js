@@ -34,7 +34,10 @@ export const listSharedModules = defineTool({
             : { data: [] };
         const modules = (moduleRows ?? []);
         const { data: linkRows } = modules.length
-            ? await db.from("module_courses").select("module_id, course_id, position").in("module_id", modules.map((row) => row.id))
+            ? await db
+                .from("module_courses")
+                .select("module_id, course_id, position")
+                .in("module_id", modules.map((row) => row.id))
             : { data: [] };
         const links = (linkRows ?? []);
         const titles = new Map();
@@ -47,7 +50,10 @@ export const listSharedModules = defineTool({
         const libraryIds = new Set(libraries.map((library) => library.id));
         const shared = modules.filter((row) => libraryIds.has(row.course_id) || links.some((link) => link.module_id === row.id));
         const { data: sessionRows } = shared.length
-            ? await db.from("sessions").select("module_id").in("module_id", shared.map((row) => row.id))
+            ? await db
+                .from("sessions")
+                .select("module_id")
+                .in("module_id", shared.map((row) => row.id))
             : { data: [] };
         const lessons = new Map();
         for (const row of (sessionRows ?? []))
@@ -71,7 +77,9 @@ export const listSharedModules = defineTool({
                     .filter((link) => link.module_id === row.id)
                     .map((link) => ({ course_id: link.course_id, course: titles.get(link.course_id) ?? null, position: link.position }))
             })),
-            linkable_courses: roomIds.filter((courseId) => !libraryIds.has(courseId)).map((courseId) => ({ course_id: courseId, title: titles.get(courseId) ?? null }))
+            linkable_courses: roomIds
+                .filter((courseId) => !libraryIds.has(courseId))
+                .map((courseId) => ({ course_id: courseId, title: titles.get(courseId) ?? null }))
         };
     }
 });
@@ -169,7 +177,10 @@ export const setCourseLibrary = defineTool({
     async run({ db, actor }, input) {
         await ownedCourse(db, actor, input.classroom_id, input.course_id);
         if (input.is_library) {
-            const { count } = await db.from("module_courses").select("module_id", { count: "exact", head: true }).eq("course_id", input.course_id);
+            const { count } = await db
+                .from("module_courses")
+                .select("module_id", { count: "exact", head: true })
+                .eq("course_id", input.course_id);
             if ((count ?? 0) > 0)
                 throw new ToolError("Este curso usa módulos compartidos: quítalos antes de convertirlo en biblioteca.");
         }

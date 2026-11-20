@@ -3,8 +3,8 @@ import { NOT_FOUND, ToolError } from "../domain/errors.js";
 import { id } from "../domain/sanitize.js";
 import { defineTool } from "../mcp/tool.js";
 import { requireMonetizable } from "./offers.js";
-import { classroomCourseIds, requireCourseInClassroom } from "./shared.js";
 import { ownedCourse } from "./ownership.js";
+import { classroomCourseIds, requireCourseInClassroom } from "./shared.js";
 /** Los mismos descuentos por defecto que usa la tienda cuando el curso no define los suyos. */
 const DEFAULT_DISCOUNTS = [30, 35, 40, 45];
 const MAX_EXTRA = 4;

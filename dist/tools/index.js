@@ -1,29 +1,71 @@
+import { auditCourse, auditExam } from "./audits.js";
 import { setCollectionBanner, setCourseBanner } from "./banners.js";
 import { importExam, importModuleContent } from "./bulk-import.js";
 import { deleteChat, getChatThread, listWaitingChats, replyChat, setChatStatus } from "./chat.js";
+import { createClassroom, getClassroom, updateClassroom } from "./classroom-admin.js";
+import { deleteClassroomItems, listClassroomItems, listSubmissions, saveGradeItem, saveMeeting, savePeriod, saveResource, saveSurvey, saveTask, saveTeam, setAttendance, setGrades } from "./classroom-space.js";
 import { listMyClassrooms } from "./classrooms.js";
 import { deleteCollection, listCollections, moveCourseToCollection, reorderCollectionCourses, saveCollection } from "./collections.js";
 import { groupSales, listSales, salesFunnel, salesSummary } from "./commerce.js";
 import { createLesson } from "./content.js";
-import { createCourse, deleteCourse, deleteTheme, getCourse, listCourseThemes, reorderModules, saveTheme, setItemThemes, transferCourse, updateCourse } from "./course-admin.js";
+import { createCourse, deleteCourse, getCourse, listCourseThemes, reorderModules, saveTheme, setItemThemes, transferCourse, updateCourse } from "./course-admin.js";
 import { getCourseOutline, listCourses } from "./courses.js";
+import { deleteItems, editItems } from "./edit-items.js";
 import { activateTrialCourse, decideAccessRequest, listAccessRequests } from "./enrollment.js";
-import { deleteExam, deleteExamQuestion, deleteScenario, deleteScenarioCriterion, getExam, getScenario, saveExamQuestion, saveScenarioCriterion, updateExam, updateScenario } from "./evaluation-admin.js";
+import { deleteExam, deleteScenario, getExam, getScenario, updateExam, updateScenario } from "./evaluation-admin.js";
 import { addExamQuestions, addScenarioCriteria, createExam, createScenario } from "./evaluations.js";
-import { deleteGame, getGame, saveGame } from "./games.js";
-import { deleteFlashcard, deleteQuizQuestion, deleteSelfCheckQuestion, listLessonItems, saveFlashcard, saveQuizQuestion, saveSelfCheckQuestion } from "./lesson-content.js";
-import { addFlashcards, addQuizQuestions } from "./lesson-items.js";
-import { deleteLesson, deleteModule, getLesson, getModule, reorderLessons, updateLesson, updateModule } from "./module-admin.js";
-import { createModule, setPublished } from "./modules.js";
-import { linkSharedModule, listSharedModules, moveSharedModule, setCourseLibrary, unlinkSharedModule } from "./shared-modules.js";
+import { getForumTopic, listForumTopics, replyForum, saveForumTopic } from "./forum.js";
+import { getGame, saveGame } from "./games.js";
 import { getGroupPricing, setGroupPricing } from "./group-pricing.js";
+import { guide } from "./guide.js";
+import { invitePeople, listInvites, resendInvites } from "./invites.js";
+import { listLessonItems } from "./lesson-content.js";
+import { addFlashcards, addQuizQuestions } from "./lesson-items.js";
+import { getLesson, getModule, reorderLessons, updateLesson, updateModule } from "./module-admin.js";
+import { createModule, setPublished } from "./modules.js";
 import { createOffer, deleteOffer, listOffers, setOfferActive, updateOffer } from "./offers.js";
 import { classroomProgress } from "./progress.js";
 import { getStudentDetail, listMembers, removeMember, setCourseGrants } from "./roster.js";
+import { searchContent } from "./search.js";
+import { linkSharedModule, listSharedModules, moveSharedModule, setCourseLibrary, unlinkSharedModule } from "./shared-modules.js";
+import { addStaff, listStaff, removeStaff, updateStaff } from "./staff.js";
 export const TOOLS = [
+    guide,
     listMyClassrooms,
+    // Aula, equipo e invitaciones
+    getClassroom,
+    updateClassroom,
+    createClassroom,
+    listStaff,
+    addStaff,
+    updateStaff,
+    removeStaff,
+    invitePeople,
+    listInvites,
+    resendInvites,
+    // Foro y espacio del aula
+    listForumTopics,
+    getForumTopic,
+    saveForumTopic,
+    replyForum,
+    listClassroomItems,
+    listSubmissions,
+    saveTask,
+    saveMeeting,
+    saveResource,
+    saveSurvey,
+    savePeriod,
+    saveGradeItem,
+    setGrades,
+    setAttendance,
+    saveTeam,
+    deleteClassroomItems,
+    // Calidad del contenido
+    auditExam,
+    auditCourse,
     listCourses,
     getCourseOutline,
+    searchContent,
     createModule,
     createLesson,
     addQuizQuestions,
@@ -45,7 +87,9 @@ export const TOOLS = [
     getGroupPricing,
     setGroupPricing,
     salesSummary,
-    // Carga masiva
+    // Carga y edición masiva
+    editItems,
+    deleteItems,
     importExam,
     importModuleContent,
     // Cursos, colecciones y estructura
@@ -62,7 +106,6 @@ export const TOOLS = [
     setCourseLibrary,
     listCourseThemes,
     saveTheme,
-    deleteTheme,
     setItemThemes,
     listCollections,
     saveCollection,
@@ -73,33 +116,20 @@ export const TOOLS = [
     setCollectionBanner,
     getModule,
     updateModule,
-    deleteModule,
     reorderLessons,
     getLesson,
     updateLesson,
-    deleteLesson,
     // Material de lección
     listLessonItems,
-    saveQuizQuestion,
-    deleteQuizQuestion,
-    saveSelfCheckQuestion,
-    deleteSelfCheckQuestion,
-    saveFlashcard,
-    deleteFlashcard,
     getGame,
     saveGame,
-    deleteGame,
     // Evaluaciones
     getExam,
     updateExam,
     deleteExam,
-    saveExamQuestion,
-    deleteExamQuestion,
     getScenario,
     updateScenario,
     deleteScenario,
-    saveScenarioCriterion,
-    deleteScenarioCriterion,
     // Personas, chat y ventas
     listMembers,
     getStudentDetail,

@@ -19,11 +19,12 @@ test/               pruebas de PKCE, almacén, protocolo, permisos, sanitizado y
 
 1. `stdio` lee una línea, valida la forma JSON-RPC y, en `tools/call`, obtiene la sesión (renovando el token si vence en menos de 60 s).
 2. Se valida la forma JSON-RPC y la versión del protocolo.
-3. `tools/call`: el esquema zod de la herramienta valida y sanea los argumentos.
+3. `tools/call`: los IDs cortos (`@3f2a9c1b`, `domain/aliases.ts`) se traducen a UUID, se completa `classroom_id` si la persona tiene una sola aula, y el esquema zod de la herramienta valida y sanea los argumentos.
 4. `resolveActor`: exige cuenta de docente y, según el nivel, rol en el aula (perfil y aula se consultan en paralelo y el resultado se recuerda unos segundos).
    Las escrituras pasan antes por el limitador por minuto.
 5. La herramienta ejecuta con un cliente de Supabase que lleva el token del usuario (RLS aplica).
-6. Se registra la auditoría seudonimizada (stderr) y se devuelve `structuredContent`.
+6. Se registra la auditoría seudonimizada (stderr). La respuesta se devuelve una sola vez como texto: los UUID se acortan y `mcp/encode.ts` la convierte en texto compacto (tablas con cabecera), o en JSON compacto si se pide `format: "json"`. No se envía `structuredContent` para no pagar dos veces el mismo contenido.
+7. Los permisos de edición confirmados (`ownedCourse`) se recuerdan un minuto y las operaciones en bloque (`edit_items`, `delete_items`, `set_published`) los comprueban una vez por curso con una sola consulta (`tools/item-kinds.ts`).
 
 ## Niveles
 

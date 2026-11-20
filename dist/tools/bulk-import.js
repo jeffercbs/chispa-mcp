@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { describeIssues, parseCardLines } from "../domain/bulk.js";
+import { auditQuestions } from "../domain/content-audit.js";
 import { ToolError } from "../domain/errors.js";
 import { id, markdown, optionalText, text } from "../domain/sanitize.js";
 import { ENUMS, LIMITS } from "../limits.js";
@@ -42,7 +43,7 @@ export const importExam = defineTool({
         const draftId = "00000000-0000-4000-8000-000000000000";
         await questionRows(db, input.module_id, draftId, items, 1); // valida las lecciones citadas antes de crear nada
         if (input.dry_run)
-            return { dry_run: true, valid: true, would_create_questions: items.length, preview: items.slice(0, 3).map((item) => item.prompt) };
+            return { dry_run: true, valid: true, would_create_questions: items.length, quality: auditQuestions(items, { mode: "simulacro" }) };
         const { data, error } = await db
             .from("exams")
             .insert({
@@ -83,7 +84,10 @@ const lesson = z.object({
     content: markdown(LIMITS.richText, "Contenido en Markdown"),
     key_idea: optionalText(400, "Idea clave"),
     objectives: z.array(text(300, "Objetivo")).max(20).optional(),
-    format: z.enum(["lectura", "presentacion", "actividad"]).default("lectura").describe("«presentacion» muestra el contenido como diapositivas"),
+    format: z
+        .enum(["lectura", "presentacion", "actividad"])
+        .default("lectura")
+        .describe("«presentacion» muestra el contenido como diapositivas"),
     quiz: z.array(quizQuestion).max(50).optional().describe("Preguntas de quiz de esta lección"),
     cards_text: z.string().max(100_000).optional().describe("Tarjetas, una por línea: «anverso | reverso»")
 });

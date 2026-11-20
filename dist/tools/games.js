@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { NOT_FOUND, ToolError } from "../domain/errors.js";
-import { defined, id, optionalText, plainText, text } from "../domain/sanitize.js";
 import { checkFormulaItem, MAX_EXPRESSION } from "../domain/formula.js";
 import { findElement, PERIODIC_ASKS } from "../domain/periodic-table.js";
+import { defined, id, optionalText, plainText, text } from "../domain/sanitize.js";
 import { defineTool } from "../mcp/tool.js";
 import { nextPosition, ownedSession, ownedSessionRow } from "./ownership.js";
 const clean = (max) => z
@@ -30,7 +30,11 @@ const words = z.object({
         .max(30)
 });
 const range = z
-    .object({ min: z.number().min(-1_000_000).max(1_000_000), max: z.number().min(-1_000_000).max(1_000_000), step: z.number().positive().optional() })
+    .object({
+    min: z.number().min(-1_000_000).max(1_000_000),
+    max: z.number().min(-1_000_000).max(1_000_000),
+    step: z.number().positive().optional()
+})
     .refine((value) => value.min <= value.max, { error: "El mínimo no puede ser mayor que el máximo." });
 const formulaItem = z
     .object({
@@ -49,7 +53,9 @@ const formulaItem = z
         context.addIssue({ code: "custom", message: problem });
 });
 const periodicItem = z.object({
-    element: clean(40).refine((value) => findElement(value) !== null, { error: "Elemento desconocido: usa nombre, símbolo o número atómico." }),
+    element: clean(40).refine((value) => findElement(value) !== null, {
+        error: "Elemento desconocido: usa nombre, símbolo o número atómico."
+    }),
     ask: z.enum(PERIODIC_ASKS),
     why: soft(400)
 });
@@ -100,7 +106,7 @@ const CONFIGS = {
     formula: z.object({ items: z.array(formulaItem).min(3).max(40) })
 };
 const KINDS = Object.keys(CONFIGS);
-const FORMS = [
+export const GAME_FORMS = [
     "clasificar: {buckets:[{key,label}] (2-6), items:[{text,bucket,why?}] (3-60)}",
     "ordenar: {items:[{text,label?,order}] (3-30)}",
     "emparejar: {pairs:[{left,right}] (3-30)}",
@@ -114,7 +120,7 @@ const FORMS = [
 export const saveGame = defineTool({
     name: "save_game",
     title: "Crear o editar un juego",
-    description: `Crea un juego interactivo en una lección o edita uno existente (envía game_id). El config depende del tipo: ${FORMS}. Queda en borrador salvo que se publique.`,
+    description: "Crea un juego interactivo en una lección o edita uno existente (envía game_id). El formato de config de cada tipo está en guide(topic=juegos). Queda en borrador salvo que se publique.",
     level: "team",
     readOnly: false,
     input: z.object({
@@ -174,21 +180,5 @@ export const getGame = defineTool({
         if (!data)
             throw new ToolError(NOT_FOUND);
         return data;
-    }
-});
-export const deleteGame = defineTool({
-    name: "delete_game",
-    title: "Borrar juego",
-    description: "Borra un juego interactivo de una lección.",
-    level: "team",
-    readOnly: false,
-    destructive: true,
-    input: z.object({ classroom_id: id("Aula"), game_id: id("Juego") }),
-    async run({ db, actor }, input) {
-        await ownedSessionRow(db, actor, input.classroom_id, "interactive_activities", input.game_id);
-        const { error } = await db.from("interactive_activities").delete().eq("id", input.game_id);
-        if (error)
-            throw new ToolError("No pudimos borrar el juego.");
-        return { deleted: true };
     }
 });
