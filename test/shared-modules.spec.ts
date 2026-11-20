@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { INSTRUCTIONS } from "../src/mcp/instructions.js";
+import { GUIDES } from "../src/tools/guide.js";
 import { TOOLS } from "../src/tools/index.js";
 
 describe("módulos compartidos", () => {
-	it("registra las herramientas y las documenta en las instrucciones", () => {
+	it("registra las herramientas y las documenta en la guía", () => {
 		const names = new Set(TOOLS.map((tool) => tool.name));
 		for (const name of ["list_shared_modules", "link_shared_module", "unlink_shared_module", "move_shared_module", "set_course_library"]) {
 			expect(names.has(name), name).toBe(true);
-			expect(INSTRUCTIONS).toContain(name);
+			expect(GUIDES.modulos_compartidos).toContain(name);
 		}
 	});
 

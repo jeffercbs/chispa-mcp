@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { describeIssues, parseCardLines, parseQuestionLines, type RowIssue } from "../domain/bulk.js";
+import { auditQuestions } from "../domain/content-audit.js";
 import { ToolError } from "../domain/errors.js";
 import { id, optionalText, text } from "../domain/sanitize.js";
 import { LIMITS } from "../limits.js";
@@ -57,8 +58,7 @@ export const addQuizQuestions = defineTool({
 				);
 		}
 		if (items.length > LIMITS.bulkQuestions) throw new ToolError(`Máximo ${LIMITS.bulkQuestions} preguntas por llamada.`);
-		if (input.dry_run)
-			return { dry_run: true, valid: true, would_add: items.length, preview: items.slice(0, 3).map((item) => item.prompt) };
+		if (input.dry_run) return { dry_run: true, valid: true, would_add: items.length, quality: auditQuestions(items, { mode: "quiz" }) };
 
 		const start = await nextPosition(db, "quiz_questions", "session_id", input.session_id);
 		await insertChunks(

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Actor } from "../domain/access.js";
 import { describeIssues, parseQuestionLines, type RowIssue } from "../domain/bulk.js";
+import { auditQuestions } from "../domain/content-audit.js";
 import { NOT_FOUND, ToolError } from "../domain/errors.js";
 import { id, markdown, optionalText, text } from "../domain/sanitize.js";
 import type { Db } from "../domain/supabase.js";
@@ -175,7 +176,7 @@ export const addExamQuestions = defineTool({
 				would_add: items.length,
 				total_after: existing + items.length,
 				replaces_existing: input.replace ? (count ?? 0) : 0,
-				preview: items.slice(0, 3).map((item) => item.prompt)
+				quality: auditQuestions(items, { mode: input.replace ? "simulacro" : "lote" })
 			};
 		}
 		if (input.replace) {

@@ -15,8 +15,7 @@ describe("instrucciones y flujos guiados", () => {
 		const names = new Set(TOOLS.map((tool) => tool.name));
 		for (const match of INSTRUCTIONS.matchAll(/\b([a-z]+(?:_[a-z]+)+)\b/g)) {
 			const word = match[1] as string;
-			if (/^(dry_run|confirm|import_|add_|get_|list_)/.test(word) && !/^(dry_run|confirm)/.test(word))
-				expect(names.has(word), word).toBe(true);
+			if (/^(import_|add_|get_|list_|edit_|delete_|search_|set_)/.test(word)) expect(names.has(word), word).toBe(true);
 		}
 	});
 
@@ -25,7 +24,8 @@ describe("instrucciones y flujos guiados", () => {
 			{ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18" } },
 			context
 		)) as { result: { instructions: string; capabilities: { prompts: unknown } } };
-		expect(response.result.instructions).toContain("CARGA MASIVA");
+		expect(response.result.instructions).toContain("AHORRO");
+		expect(response.result.instructions.length).toBeLessThan(3_600);
 		expect(response.result.capabilities.prompts).toBeDefined();
 	});
 
@@ -49,12 +49,27 @@ describe("instrucciones y flujos guiados", () => {
 		});
 	});
 
-	it("cada herramienta indica quién puede usarla", async () => {
+	it("solo las herramientas restringidas anuncian quién puede usarlas", async () => {
 		const response = (await handleRequest({ jsonrpc: "2.0", id: 6, method: "tools/list" }, context)) as {
-			result: { tools: { description: string }[] };
+			result: { tools: { name: string; description: string }[] };
 		};
-		for (const tool of response.result.tools)
-			expect(tool.description).toMatch(/^\[(Cuenta docente|Equipo del aula|Administrador del aula)/);
+		for (const tool of response.result.tools) {
+			const level = TOOLS.find((item) => item.name === tool.name)?.level;
+			if (level === "manager") expect(tool.description, tool.name).toMatch(/^Solo administrador del aula\./);
+			else if (level === "none" || level === "team") expect(tool.description, tool.name).not.toMatch(/^\[/);
+			else expect(tool.description, tool.name).toMatch(/^Requiere permiso/);
+		}
+	});
+
+	it("la guía cubre los temas que las instrucciones mandan a consultar", async () => {
+		for (const topic of ["presentaciones", "juegos", "imagenes", "precios", "modulos_compartidos", "carga_masiva"]) {
+			const response = (await handleRequest(
+				{ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "guide", arguments: { topic } } },
+				context
+			)) as { result: { content: { text: string }[]; isError?: boolean } };
+			expect(response.result.isError, topic).toBeFalsy();
+			expect(response.result.content[0]?.text.length, topic).toBeGreaterThan(100);
+		}
 	});
 
 	it("los errores de validación citan el campo y varios problemas a la vez", async () => {
