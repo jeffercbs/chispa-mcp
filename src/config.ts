@@ -46,7 +46,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
 		port,
 		dir: env.CHISPA_MCP_HOME || join(base, "chispa-mcp"),
 		currency,
-		roleCacheSeconds: bounded(env, "CHISPA_ROLE_CACHE_SECONDS", 20, 0, 300),
+		roleCacheSeconds: bounded(env, "CHISPA_ROLE_CACHE_SECONDS", 120, 0, 300),
 		writesPerMinute: bounded(env, "CHISPA_WRITES_PER_MINUTE", 120, 10, 10_000),
 		loginTimeoutMinutes: bounded(env, "CHISPA_LOGIN_TIMEOUT_MINUTES", 5, 1, 30)
 	};

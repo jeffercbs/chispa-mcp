@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { LIMITS } from "../limits.js";
+import { aliases } from "./aliases.js";
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: justamente se buscan caracteres de control para eliminarlos
 const INVISIBLE = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u200b-\u200f\u2028\u2029\u2060-\u2064\ufeff\p{Bidi_Control}]/gu;
@@ -91,7 +92,22 @@ export const markdown = (max: number, description: string) =>
 		.transform((value) => richText(value, max))
 		.pipe(z.string().min(1, { error: `${description}: no puede estar vacío.` }));
 
-export const id = (description: string) => z.uuid({ error: `${description}: no es un identificador válido.` }).describe(description);
+export const id = (description: string) =>
+	z
+		.string()
+		.max(64)
+		.describe(description)
+		.transform((value, context) => {
+			const resolved = aliases.resolve(value);
+			if (resolved) return resolved;
+			context.issues.push({
+				code: "custom",
+				input: value,
+				message: `${description}: ese ID corto no está en esta sesión; vuelve a listar para obtenerlo.`
+			});
+			return z.NEVER;
+		})
+		.pipe(z.uuid({ error: `${description}: no es un identificador válido.` }));
 
 export function slugify(value: string, max = 40) {
 	return (

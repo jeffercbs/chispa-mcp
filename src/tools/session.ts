@@ -3,9 +3,13 @@ import { beginLogin, type LoginFlow } from "../auth/oauth.js";
 import { currentIdentity } from "../auth/session.js";
 import { clearTokens } from "../auth/store.js";
 import type { Config } from "../config.js";
+import { forgetRoles } from "../domain/access.js";
+import { aliases } from "../domain/aliases.js";
 import { userClient } from "../domain/supabase.js";
 import { defineTool } from "../mcp/tool.js";
 import { pendingUpdate } from "../update.js";
+import { forgetDefaultClassroom } from "./classrooms.js";
+import { forgetEditable } from "./ownership.js";
 
 /** Cuánto espera `login` a que la persona apruebe antes de devolver la dirección y seguir esperando. */
 const WAIT_MS = 40_000;
@@ -71,7 +75,8 @@ export const login = defineTool({
 		return {
 			status: "waiting",
 			url: current?.url,
-			message: "Se abrió el navegador. Pídele a la persona que pulse «Permitir» con su cuenta de Chispa (si no se abrió, que use la dirección). Luego vuelve a llamar a login."
+			message:
+				"Se abrió el navegador. Pídele a la persona que pulse «Permitir» con su cuenta de Chispa (si no se abrió, que use la dirección). Luego vuelve a llamar a login."
 		};
 	}
 });
@@ -88,6 +93,10 @@ export const logout = defineTool({
 		if (!config) throw new Error("Configuración no disponible.");
 		const removed = await clearTokens(config.dir, config.url);
 		current = null;
+		forgetRoles();
+		forgetEditable();
+		forgetDefaultClassroom();
+		await aliases.clear();
 		return { status: "signed_out", message: removed ? "Sesión cerrada en este equipo." : "No había sesión guardada." };
 	}
 });

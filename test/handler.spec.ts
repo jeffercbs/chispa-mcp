@@ -67,7 +67,9 @@ describe("despachador MCP", () => {
 
 	it("permite al administrador del aula", async () => {
 		const response = await call({ classroom_id: ROOM }, { profiles: { role: "profesor" }, classrooms: { owner_id: USER } });
-		expect(response).toMatchObject({ result: { structuredContent: { room: ROOM } } });
+		const result = (response as { result: { content: { text: string }[]; structuredContent?: unknown } }).result;
+		expect(result.structuredContent).toBeUndefined();
+		expect(result.content[0]?.text).toMatch(/^room: @[0-9a-f]{8}$/);
 	});
 
 	it("responde a notificaciones sin cuerpo y a métodos desconocidos con error", async () => {

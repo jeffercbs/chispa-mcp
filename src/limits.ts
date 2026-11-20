@@ -15,7 +15,7 @@ export const LIMITS = {
 	bulkFlashcards: 200,
 	bulkLessons: 30,
 	/** Filas por consulta de inserción: evita consultas enormes. */
-	insertChunk: 100,
+	insertChunk: 200,
 	/** Páginas de listados. */
 	pageDefault: 50,
 	pageMax: 200,
