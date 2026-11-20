@@ -6,19 +6,31 @@ import { courseInClassroom, requireCourseInClassroom } from "./shared.js";
 const NOT_EDITOR = "No tienes permiso para editar este curso.";
 const NOT_OWNER = "Solo quien creó el curso puede hacer esto.";
 
+const EDIT_TTL_MS = 60_000;
+const editable = new Map<string, number>();
+
+/** Olvida los permisos de edición recordados (por ejemplo, al cerrar sesión). */
+export const forgetEditable = () => editable.clear();
+
 /**
  * Mismo criterio que la UI (`can_edit_course`): dueño del curso, administrador del aula
  * donde está vinculado o profesor con acceso a él. El curso debe estar en el aula indicada.
+ * Un permiso confirmado se recuerda un minuto; RLS sigue siendo la frontera real.
  */
-export async function ownedCourse(db: Db, _actor: Actor, classroomId: string, courseId: string) {
-	// Las dos comprobaciones son independientes: se lanzan juntas y se evalúan en orden.
-	const [inRoom, editable] = await Promise.all([
-		courseInClassroom(db, classroomId, courseId),
-		db.rpc("can_edit_course", { course: courseId })
-	]);
-	if (!inRoom && !(editable.data === true && (await isLibrary(db, courseId)))) throw new ToolError(NOT_FOUND);
-	if (editable.data !== true) throw new ToolError(NOT_EDITOR);
+export async function ownedCourse(db: Db, actor: Actor, classroomId: string, courseId: string) {
+	const key = `${actor.userId}:${classroomId}:${courseId}`;
+	if ((editable.get(key) ?? 0) > Date.now()) return { courseId };
+	const [inRoom, rpc] = await Promise.all([courseInClassroom(db, classroomId, courseId), db.rpc("can_edit_course", { course: courseId })]);
+	if (!inRoom && !(rpc.data === true && (await isLibrary(db, courseId)))) throw new ToolError(NOT_FOUND);
+	if (rpc.data !== true) throw new ToolError(NOT_EDITOR);
+	if (editable.size > 500) editable.clear();
+	editable.set(key, Date.now() + EDIT_TTL_MS);
 	return { courseId };
+}
+
+/** Comprueba varios cursos a la vez (una vez por curso distinto). */
+export async function ownedCourses(db: Db, actor: Actor, classroomId: string, courseIds: Iterable<string>) {
+	await Promise.all([...new Set(courseIds)].map((courseId) => ownedCourse(db, actor, classroomId, courseId)));
 }
 
 /** Las bibliotecas de módulos compartidos no están vinculadas a un aula: se editan con el permiso del curso. */
@@ -101,13 +113,21 @@ export async function applyOrder(db: Db, table: "modules" | "sessions", column: 
 	if (new Set(ids).size !== ids.length || ids.length !== existing.size || ids.some((item) => !existing.has(item))) {
 		throw new ToolError("La lista debe incluir todos los elementos, sin repetir ni añadir otros.");
 	}
-	const results = await Promise.all(
-		ids.map((item, index) =>
-			db
-				.from(table)
-				.update({ position: index + 1, number: index + 1 })
-				.eq("id", item)
-		)
+	const results = await inBatches(ids, 10, (item, index) =>
+		db
+			.from(table)
+			.update({ position: index + 1, number: index + 1 })
+			.eq("id", item)
 	);
 	if (results.some((result) => result.error)) throw new ToolError("No pudimos guardar el orden.");
+}
+
+/** Ejecuta tareas con un máximo de peticiones simultáneas, para no saturar la base. */
+export async function inBatches<T, R>(items: readonly T[], size: number, work: (item: T, index: number) => PromiseLike<R>) {
+	const results: R[] = [];
+	for (let start = 0; start < items.length; start += size) {
+		const slice = items.slice(start, start + size);
+		results.push(...(await Promise.all(slice.map((item, offset) => work(item, start + offset)))));
+	}
+	return results;
 }

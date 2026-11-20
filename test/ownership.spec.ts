@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { type Actor, resolvePermissions } from "../src/domain/access.js";
-import { creatorCourse, ownedCourse, ownedSession } from "../src/tools/ownership.js";
+import { creatorCourse, forgetEditable, ownedCourse, ownedSession } from "../src/tools/ownership.js";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const ROOM = "22222222-2222-4222-8222-222222222222";
@@ -33,6 +33,8 @@ function fakeDb(tables: Tables) {
 const actor = (systemAdmin = false): Actor => ({ userId: USER, classroomId: ROOM, role: "profesor", isOwner: false, permissions: resolvePermissions("profesor", null), systemAdmin });
 
 describe("propiedad del contenido", () => {
+	beforeEach(() => forgetEditable());
+
 	it("acepta un curso del aula que la persona puede editar", async () => {
 		const db = fakeDb({ classroom_courses: [{ course_id: COURSE }], can_edit: true });
 		await expect(ownedCourse(db, actor(), ROOM, COURSE)).resolves.toEqual({ courseId: COURSE });

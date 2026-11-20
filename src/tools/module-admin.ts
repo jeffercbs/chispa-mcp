@@ -5,7 +5,6 @@ import { ENUMS } from "../limits.js";
 import { defineTool } from "../mcp/tool.js";
 import { applyOrder, ownedModule, ownedSession } from "./ownership.js";
 
-const confirm = z.literal(true).describe("Debe ser true: la persona confirmó esta acción irreversible");
 const KINDS = ENUMS.moduleKind;
 const FORMATS = ENUMS.sessionFormat;
 
@@ -90,22 +89,6 @@ export const updateModule = defineTool({
 	}
 });
 
-export const deleteModule = defineTool({
-	name: "delete_module",
-	title: "Borrar módulo",
-	description: "Borra definitivamente un módulo con sus lecciones y evaluaciones. Irreversible: pide confirmación explícita a la persona.",
-	level: "team",
-	readOnly: false,
-	destructive: true,
-	input: z.object({ classroom_id: id("Aula"), module_id: id("Módulo"), confirm }),
-	async run({ db, actor }, input) {
-		await ownedModule(db, actor, input.classroom_id, input.module_id);
-		const { error } = await db.from("modules").delete().eq("id", input.module_id);
-		if (error) throw new ToolError("No pudimos borrar el módulo.");
-		return { deleted: true, module_id: input.module_id };
-	}
-});
-
 export const reorderLessons = defineTool({
 	name: "reorder_lessons",
 	title: "Ordenar lecciones",
@@ -120,31 +103,52 @@ export const reorderLessons = defineTool({
 	}
 });
 
+const LESSON_FIELDS = ["summary", "objectives", "key_idea", "content", "video_url"] as const;
+const SLIDE_BREAK = /\n-{3,}[ \t]*\n/;
+
 export const getLesson = defineTool({
 	name: "get_lesson",
 	title: "Detalle de la lección",
 	description:
-		"Devuelve el contenido completo de una lección (resumen, objetivos, texto, vídeo, formato) y cuántos quizzes, tarjetas y juegos tiene.",
+		"Datos de una lección y cuántos quizzes, tarjetas y juegos tiene. El contenido solo viene si lo pides en fields; en presentaciones, slides «3-5» trae solo esas diapositivas.",
 	level: "team",
 	readOnly: true,
-	input: z.object({ classroom_id: id("Aula"), session_id: id("Lección") }),
+	input: z.object({
+		classroom_id: id("Aula"),
+		session_id: id("Lección"),
+		fields: z.array(z.enum(LESSON_FIELDS)).optional().describe("Por defecto summary y key_idea"),
+		slides: z
+			.string()
+			.regex(/^\d{1,3}(-\d{1,3})?$/)
+			.optional()
+			.describe("Rango de diapositivas, p. ej. «2» o «3-5»")
+	}),
 	async run({ db, actor }, input) {
 		await ownedSession(db, actor, input.classroom_id, input.session_id);
+		const fields = new Set<string>(input.fields ?? ["summary", "key_idea"]);
+		if (input.slides) fields.add("content");
+		const columns = ["title", "format", "is_published", "number", ...LESSON_FIELDS.filter((field) => fields.has(field))].join(", ");
 		const count = async (table: string) =>
 			(await db.from(table).select("id", { count: "exact", head: true }).eq("session_id", input.session_id)).count ?? 0;
 		const [{ data }, quiz, self, cards, games] = await Promise.all([
-			db
-				.from("sessions")
-				.select("id, module_id, title, summary, objectives, content, key_idea, format, video_url, is_published, position")
-				.eq("id", input.session_id)
-				.maybeSingle(),
+			db.from("sessions").select(columns).eq("id", input.session_id).maybeSingle(),
 			count("quiz_questions"),
 			count("session_questions"),
 			count("flashcards"),
 			count("interactive_activities")
 		]);
 		if (!data) throw new ToolError(NOT_FOUND);
-		return { ...(data as Record<string, unknown>), quiz_questions: quiz, self_check_questions: self, flashcards: cards, games };
+		const lesson = { ...(data as unknown as Record<string, unknown>) };
+		if (typeof lesson.content === "string") {
+			const slides = lesson.content.split(SLIDE_BREAK);
+			if (lesson.format === "presentacion") lesson.slides_total = slides.length;
+			if (input.slides) {
+				const [from = 1, to = from] = input.slides.split("-").map(Number);
+				lesson.content = slides.slice(Math.max(from - 1, 0), to).join("\n---\n");
+				lesson.slides_shown = `${from}-${Math.min(to, slides.length)}`;
+			}
+		}
+		return { ...lesson, counts: { quiz, self_check: self, flashcards: cards, games } };
 	}
 });
 
@@ -195,21 +199,5 @@ export const updateLesson = defineTool({
 		const { error } = await db.from("sessions").update(patch).eq("id", input.session_id);
 		if (error) throw new ToolError("No pudimos guardar la lección.");
 		return { session_id: input.session_id, updated: Object.keys(patch) };
-	}
-});
-
-export const deleteLesson = defineTool({
-	name: "delete_lesson",
-	title: "Borrar lección",
-	description: "Borra definitivamente una lección con su quiz, tarjetas y juegos. Irreversible: pide confirmación explícita a la persona.",
-	level: "team",
-	readOnly: false,
-	destructive: true,
-	input: z.object({ classroom_id: id("Aula"), session_id: id("Lección"), confirm }),
-	async run({ db, actor }, input) {
-		await ownedSession(db, actor, input.classroom_id, input.session_id);
-		const { error } = await db.from("sessions").delete().eq("id", input.session_id);
-		if (error) throw new ToolError("No pudimos borrar la lección.");
-		return { deleted: true, session_id: input.session_id };
 	}
 });
