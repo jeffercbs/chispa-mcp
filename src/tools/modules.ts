@@ -2,7 +2,8 @@ import { z } from "zod";
 import { ToolError } from "../domain/errors.js";
 import { id, optionalMarkdown, optionalText, slugWithCode, text } from "../domain/sanitize.js";
 import { defineTool } from "../mcp/tool.js";
-import { nextPosition, ownedCourse, ownedModule, ownedSession } from "./ownership.js";
+import { ownedRows } from "./item-kinds.js";
+import { nextPosition, ownedCourse, ownedCourses } from "./ownership.js";
 
 export const createModule = defineTool({
 	name: "create_module",
@@ -51,22 +52,22 @@ const TABLES = { course: "courses", module: "modules", session: "sessions" } as 
 export const setPublished = defineTool({
 	name: "set_published",
 	title: "Publicar o pasar a borrador",
-	description: "Publica o pasa a borrador un curso, módulo o lección que puedes editar. Confirma con la persona antes de publicar.",
+	description:
+		"Publica o pasa a borrador varios cursos, módulos o lecciones del mismo tipo en una llamada. Confirma con la persona antes de publicar.",
 	level: "team",
 	readOnly: false,
 	input: z.object({
 		classroom_id: id("Aula"),
-		kind: z.enum(["course", "module", "session"]).describe("Qué se publica"),
-		item_id: id("Elemento"),
-		published: z.boolean().describe("true para publicar, false para borrador")
+		kind: z.enum(["course", "module", "session"]),
+		item_ids: z.array(id("Elemento")).min(1).max(200),
+		published: z.boolean().describe("true publica, false pasa a borrador")
 	}),
 	async run({ db, actor }, input) {
-		if (input.kind === "course") await ownedCourse(db, actor, input.classroom_id, input.item_id);
-		else if (input.kind === "module") await ownedModule(db, actor, input.classroom_id, input.item_id);
-		else await ownedSession(db, actor, input.classroom_id, input.item_id);
-
-		const { error } = await db.from(TABLES[input.kind]).update({ is_published: input.published }).eq("id", input.item_id);
+		const ids = [...new Set(input.item_ids)];
+		if (input.kind === "course") await ownedCourses(db, actor, input.classroom_id, ids);
+		else await ownedRows(db, actor, input.classroom_id, input.kind === "module" ? "module" : "lesson", ids);
+		const { error } = await db.from(TABLES[input.kind]).update({ is_published: input.published }).in("id", ids);
 		if (error) throw new ToolError("No pudimos cambiar la publicación.");
-		return { kind: input.kind, item_id: input.item_id, published: input.published };
+		return { kind: input.kind, changed: ids.length, published: input.published };
 	}
 });

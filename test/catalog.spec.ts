@@ -22,8 +22,7 @@ describe("catálogo de herramientas", () => {
 		const names = [
 			"delete_course",
 			"transfer_course",
-			"delete_module",
-			"delete_lesson",
+			"delete_items",
 			"delete_exam",
 			"delete_scenario",
 			"delete_collection",
@@ -47,6 +46,13 @@ describe("catálogo de herramientas", () => {
 
 	it("las cargas masivas se pueden validar sin guardar (dry_run) y por texto compacto", () => {
 		for (const name of ["import_exam", "import_module_content", "add_exam_questions", "add_quiz_questions", "add_flashcards"]) {
+			const tool = TOOLS.find((item) => item.name === name);
+			expect(tool && "dry_run" in tool.input.shape, name).toBe(true);
+		}
+	});
+
+	it("las ediciones masivas se pueden validar sin guardar", () => {
+		for (const name of ["edit_items"]) {
 			const tool = TOOLS.find((item) => item.name === name);
 			expect(tool && "dry_run" in tool.input.shape, name).toBe(true);
 		}
