@@ -20,6 +20,7 @@ export const createCourse = defineTool({
         description: optionalMarkdown(5000, "Descripción"),
         objective: optionalText(1000, "Objetivo"),
         audience: optionalText(1000, "A quién va dirigido"),
+        category: optionalText(40, "Categoría para filtrar los cursos, por ejemplo «Docentes» (usa el mismo nombre que otros cursos para agruparlos)"),
         difficulty: z.enum(DIFFICULTY).optional().describe("Nivel; omítelo para no mostrar nivel"),
         visibility: z.enum(VISIBILITY).default("aula").describe("publico (gratis), publico_pago o aula (solo el aula)"),
         collection_id: id("Colección propia").optional(),
@@ -42,6 +43,7 @@ export const createCourse = defineTool({
             description: input.description,
             objective: input.objective,
             audience: input.audience,
+            category: input.category,
             difficulty: input.difficulty ?? null,
             visibility: input.visibility,
             collection_id: input.collection_id ?? null,
@@ -82,7 +84,7 @@ export const getCourse = defineTool({
         await ownedCourse(db, actor, input.classroom_id, input.course_id);
         const { data } = await db
             .from("courses")
-            .select("id, title, subtitle, slug, description, objective, audience, difficulty, visibility, collection_id, is_published, position, owner_id")
+            .select("id, title, subtitle, slug, description, objective, audience, category, difficulty, visibility, collection_id, is_published, position, owner_id")
             .eq("id", input.course_id)
             .maybeSingle();
         if (!data)
@@ -110,6 +112,7 @@ export const updateCourse = defineTool({
         description: patchMarkdown(5000, "Descripción"),
         objective: patchText(1000, "Objetivo"),
         audience: patchText(1000, "A quién va dirigido"),
+        category: patchText(40, "Categoría para filtrar los cursos; usa el mismo nombre que otros cursos para agruparlos"),
         difficulty: z
             .enum([...DIFFICULTY, "ninguno"])
             .optional()
@@ -129,6 +132,7 @@ export const updateCourse = defineTool({
             description: input.description,
             objective: input.objective,
             audience: input.audience,
+            category: input.category,
             difficulty: input.difficulty === undefined ? undefined : input.difficulty === "ninguno" ? null : input.difficulty,
             visibility: input.visibility,
             slug: input.slug,

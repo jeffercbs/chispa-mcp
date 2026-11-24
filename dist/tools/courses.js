@@ -6,7 +6,7 @@ import { classroomCourseIds, requireCourseInClassroom } from "./shared.js";
 export const listCourses = defineTool({
     name: "list_courses",
     title: "Cursos del aula",
-    description: "Lista los cursos del aula, si están publicados y si los puedes editar.",
+    description: "Lista los cursos del aula, su categoría, si están publicados y si los puedes editar.",
     level: "team",
     readOnly: true,
     input: z.object({ classroom_id: id("Aula") }),
@@ -16,7 +16,7 @@ export const listCourses = defineTool({
             return { courses: [] };
         const manages = actor.role === "administrador" || actor.systemAdmin;
         const [{ data }, { data: grants }] = await Promise.all([
-            db.from("courses").select("id, title, is_published, owner_id").in("id", ids).order("position"),
+            db.from("courses").select("id, title, category, is_published, owner_id").in("id", ids).order("position"),
             manages
                 ? Promise.resolve({ data: [] })
                 : db.from("classroom_course_grants").select("course_id").eq("classroom_id", input.classroom_id).eq("user_id", actor.userId)
@@ -27,6 +27,7 @@ export const listCourses = defineTool({
             courses: rows.map((course) => ({
                 id: course.id,
                 title: course.title,
+                category: course.category,
                 published: course.is_published,
                 editable: manages || course.owner_id === actor.userId || granted.has(course.id)
             }))
